@@ -12,11 +12,11 @@ import (
 )
 
 type (
-	cosConfig struct {
+	CosConfig struct {
 		// 授权
 		Secret gox.Secret `json:"secret" yaml:"secret" validate:"required"`
 		// 存储桶地址
-		BucketUrl string `json:"bucketUrl" yaml:"bucketUrl" validate:"required,url"`
+		Url string `json:"url" yaml:"url" validate:"required,url"`
 	}
 
 	// Cos 腾讯云存储

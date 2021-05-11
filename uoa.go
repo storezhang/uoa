@@ -19,7 +19,7 @@ func New(config Config) (uoa Uoa, err error) {
 	switch config.Type {
 	case TypeCos:
 		var bucketUrl *url.URL
-		if bucketUrl, err = url.Parse(config.Cos.BucketUrl); nil != err {
+		if bucketUrl, err = url.Parse(config.Cos.Url); nil != err {
 			return
 		}
 		uoa = NewCos(config.Cos.Secret, &cos.BaseURL{BucketURL: bucketUrl})
