@@ -82,16 +82,28 @@ func (c *Cos) DownloadUrl(ctx context.Context, key string, filename string, opts
 	var (
 		preassignedURL *url.URL
 		getOptions     *cos.ObjectGetOptions
+		headRsp        *cos.Response
 		contentType    string
 	)
+
+	// 检查文件是否存在，文件不存在没必要往下继续执行
+	if headRsp, err = c.client.Object.Head(ctx, key, nil); nil != err {
+		if rspErr, ok := err.(*cos.ErrorResponse); ok && http.StatusNotFound == rspErr.Response.StatusCode {
+			err = nil
+		}
+
+		return
+	}
 
 	if appliedOptions.isDownload {
 		getOptions = &cos.ObjectGetOptions{
 			ResponseContentDisposition: gox.ContentDisposition(filename, gox.ContentDispositionTypeAttachment),
 		}
 	} else if appliedOptions.isInline {
-		if contentType, err = c.getContentType(ctx, key); nil != err {
-			return
+		if "" != appliedOptions.contentType {
+			contentType = appliedOptions.contentType
+		} else {
+			contentType = headRsp.Header.Get(gox.HeaderContentType)
 		}
 		getOptions = &cos.ObjectGetOptions{
 			ResponseContentDisposition: gox.ContentDisposition(filename, gox.ContentDispositionTypeInline),
@@ -112,18 +124,6 @@ func (c *Cos) DownloadUrl(ctx context.Context, key string, filename string, opts
 	}
 	// 解决Golang JSON序列化时的HTML Escape
 	downloadUrl = c.escape(preassignedURL.String())
-
-	return
-}
-
-func (c *Cos) getContentType(ctx context.Context, key string) (contentType string, err error) {
-	var rsp *cos.Response
-
-	contentType = "application/octet-stream"
-	if rsp, err = c.client.Object.Head(ctx, key, nil); nil != err {
-		return
-	}
-	contentType = rsp.Header.Get("Content-Type")
 
 	return
 }

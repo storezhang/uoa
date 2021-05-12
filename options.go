@@ -11,6 +11,8 @@ type options struct {
 	isDownload bool
 	// 打开文件
 	isInline bool
+	// 文件类型
+	contentType string
 }
 
 func defaultOptions() options {
