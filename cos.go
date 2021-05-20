@@ -17,38 +17,49 @@ type (
 		Secret gox.Secret `json:"secret" yaml:"secret" validate:"required"`
 		// 存储桶地址
 		Url string `json:"url" yaml:"url" validate:"required,url"`
+		// 样式分隔符
+		Separator string `default:"/" json:"separator" yaml:"separator" validate:"len=1"`
 	}
 
 	// Cos 腾讯云存储
 	Cos struct {
-		secret gox.Secret
+		config CosConfig
 
 		client *cos.Client
 	}
 )
 
 // NewCos 创建腾讯云对象存储实现类
-func NewCos(secret gox.Secret, url *cos.BaseURL) *Cos {
-	return &Cos{
-		secret: secret,
+func NewCos(config CosConfig) (client *Cos, err error) {
+	var bucketUrl *url.URL
+	if bucketUrl, err = url.Parse(config.Url); nil != err {
+		return
+	}
 
-		client: cos.NewClient(url, &http.Client{
+	client = &Cos{
+		config: config,
+
+		client: cos.NewClient(&cos.BaseURL{BucketURL: bucketUrl}, &http.Client{
 			Transport: &cos.AuthorizationTransport{
-				SecretID:  secret.Id,
-				SecretKey: secret.Key,
+				SecretID:  config.Secret.Id,
+				SecretKey: config.Secret.Key,
 				// nolint:gosec
 				Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 			},
 		}),
 	}
+
+	return
 }
 
-func (c *Cos) UploadUrl(ctx context.Context, key string, opts ...option) (uploadUrl string, err error) {
+func (c *Cos) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl string, err error) {
 	appliedOptions := defaultOptions()
 	for _, opt := range opts {
 		opt.apply(&appliedOptions)
 	}
 
+	// 处理样式分隔符
+	fileKey := strings.Join(key.Paths(), c.config.Separator)
 	var preassignedURL *url.URL
 	putOptions := cos.ObjectPutHeaderOptions{
 		XOptionHeader: &http.Header{
@@ -59,8 +70,8 @@ func (c *Cos) UploadUrl(ctx context.Context, key string, opts ...option) (upload
 	if preassignedURL, err = c.client.Object.GetPresignedURL(
 		ctx,
 		http.MethodPut,
-		key,
-		c.secret.Id, c.secret.Key,
+		fileKey,
+		c.config.Secret.Id, c.config.Secret.Key,
 		appliedOptions.expired,
 		putOptions,
 	); nil != err {
@@ -73,7 +84,7 @@ func (c *Cos) UploadUrl(ctx context.Context, key string, opts ...option) (upload
 	return
 }
 
-func (c *Cos) DownloadUrl(ctx context.Context, key string, filename string, opts ...option) (downloadUrl string, err error) {
+func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ...option) (downloadUrl string, err error) {
 	appliedOptions := defaultOptions()
 	for _, opt := range opts {
 		opt.apply(&appliedOptions)
@@ -86,8 +97,10 @@ func (c *Cos) DownloadUrl(ctx context.Context, key string, filename string, opts
 		contentType    string
 	)
 
+	// 处理样式分隔符
+	fileKey := strings.Join(key.Paths(), c.config.Separator)
 	// 检查文件是否存在，文件不存在没必要往下继续执行
-	if headRsp, err = c.client.Object.Head(ctx, key, nil); nil != err {
+	if headRsp, err = c.client.Object.Head(ctx, fileKey, nil); nil != err {
 		if rspErr, ok := err.(*cos.ErrorResponse); ok && http.StatusNotFound == rspErr.Response.StatusCode {
 			err = nil
 		}
@@ -115,8 +128,8 @@ func (c *Cos) DownloadUrl(ctx context.Context, key string, filename string, opts
 	if preassignedURL, err = c.client.Object.GetPresignedURL(
 		ctx,
 		http.MethodGet,
-		key,
-		c.secret.Id, c.secret.Key,
+		fileKey,
+		c.config.Secret.Id, c.config.Secret.Key,
 		appliedOptions.expired,
 		getOptions,
 	); nil != err {
