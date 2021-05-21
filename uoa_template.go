@@ -27,8 +27,8 @@ func (t *uoaTemplate) DownloadUrl(ctx context.Context, key Key, filename string,
 		opt.apply(appliedOptions)
 	}
 
-	keyMaker := &keyTemplate{key: key, environment: appliedOptions.environment}
-	if downloadUrl, err = t.uoa.DownloadUrl(ctx, keyMaker, filename, opts...); nil != err {
+	keyTemplate := &keyTemplate{key: key, environment: appliedOptions.environment}
+	if downloadUrl, err = t.uoa.DownloadUrl(ctx, keyTemplate, filename, opts...); nil != err {
 		return
 	}
 	// 解决Golang JSON序列化时的HTML Escape
