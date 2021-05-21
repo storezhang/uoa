@@ -24,7 +24,7 @@ func (u *uoaMaker) UploadUrl(ctx context.Context, key Key, opts ...option) (uplo
 func (u *uoaMaker) DownloadUrl(ctx context.Context, key Key, filename string, opts ...option) (downloadUrl string, err error) {
 	appliedOptions := defaultOptions()
 	for _, opt := range opts {
-		opt.apply(&appliedOptions)
+		opt.apply(appliedOptions)
 	}
 
 	keyMaker := &keyMaker{key: key, environment: appliedOptions.environment}

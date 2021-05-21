@@ -19,8 +19,8 @@ type options struct {
 	separator string
 }
 
-func defaultOptions() options {
-	return options{
+func defaultOptions() *options {
+	return &options{
 		expired:    24 * time.Hour,
 		isDownload: false,
 		isInline:   true,

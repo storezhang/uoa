@@ -61,7 +61,7 @@ func NewCos(config CosConfig) (client *Cos, err error) {
 func (c *Cos) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl string, err error) {
 	appliedOptions := defaultOptions()
 	for _, opt := range opts {
-		opt.apply(&appliedOptions)
+		opt.apply(appliedOptions)
 	}
 
 	// 处理样式分隔符
@@ -91,7 +91,7 @@ func (c *Cos) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl
 func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ...option) (downloadUrl string, err error) {
 	appliedOptions := defaultOptions()
 	for _, opt := range opts {
-		opt.apply(&appliedOptions)
+		opt.apply(appliedOptions)
 	}
 
 	var (
