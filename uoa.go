@@ -26,7 +26,7 @@ func New(config Config) (uoa Uoa, err error) {
 	case TypeCos:
 		implementer, err = NewCos(config.Cos)
 	}
-	uoa = &uoaMaker{uoa: implementer}
+	uoa = &uoaTemplate{uoa: implementer}
 
 	return
 }
