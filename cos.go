@@ -9,6 +9,7 @@ import (
 
 	`github.com/mcuadros/go-defaults`
 	`github.com/storezhang/gox`
+	`github.com/storezhang/validatorx`
 	`github.com/tencentyun/cos-go-sdk-v5`
 )
 
@@ -32,6 +33,9 @@ type (
 func NewCos(config CosConfig) (client *Cos, err error) {
 	// 处理默认值
 	defaults.SetDefaults(&config)
+	if err = validatorx.Validate(config); nil != err {
+		return
+	}
 
 	var bucketUrl *url.URL
 	if bucketUrl, err = url.Parse(config.Url); nil != err {

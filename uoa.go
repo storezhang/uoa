@@ -2,6 +2,8 @@ package uoa
 
 import (
 	`context`
+
+	`github.com/storezhang/validatorx`
 )
 
 // Uoa 对象存储接口
@@ -15,6 +17,10 @@ type Uoa interface {
 // New 创建适配器
 func New(config Config) (uoa Uoa, err error) {
 	var implementer Uoa
+
+	if err = validatorx.Validate(config); nil != err {
+		return
+	}
 
 	switch config.Type {
 	case TypeCos:
