@@ -1,7 +1,7 @@
 package uoa
 
 const (
-	// TypeCos 腾讯云直播
+	// TypeCos 腾讯云对象存储
 	TypeCos Type = "cos"
 )
 

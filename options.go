@@ -13,12 +13,17 @@ type options struct {
 	isInline bool
 	// 文件类型
 	contentType string
+	// 环境
+	environment string
+	// 分隔符
+	separator string
 }
 
 func defaultOptions() options {
 	return options{
 		expired:    24 * time.Hour,
-		isDownload: false,
+		isDownload: true,
 		isInline:   false,
+		separator:  "/",
 	}
 }

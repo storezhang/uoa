@@ -7,6 +7,7 @@ import (
 	`net/url`
 	`strings`
 
+	`github.com/mcuadros/go-defaults`
 	`github.com/storezhang/gox`
 	`github.com/tencentyun/cos-go-sdk-v5`
 )
@@ -17,8 +18,6 @@ type (
 		Secret gox.Secret `json:"secret" yaml:"secret" validate:"required"`
 		// 存储桶地址
 		Url string `json:"url" yaml:"url" validate:"required,url"`
-		// 样式分隔符
-		Separator string `default:"/" json:"separator" yaml:"separator" validate:"len=1"`
 	}
 
 	// Cos 腾讯云存储
@@ -31,6 +30,9 @@ type (
 
 // NewCos 创建腾讯云对象存储实现类
 func NewCos(config CosConfig) (client *Cos, err error) {
+	// 处理默认值
+	defaults.SetDefaults(&config)
+
 	var bucketUrl *url.URL
 	if bucketUrl, err = url.Parse(config.Url); nil != err {
 		return
@@ -59,7 +61,7 @@ func (c *Cos) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl
 	}
 
 	// 处理样式分隔符
-	fileKey := strings.Join(key.Paths(), c.config.Separator)
+	fileKey := strings.Join(key.Paths(), appliedOptions.separator)
 	var preassignedURL *url.URL
 	putOptions := cos.ObjectPutHeaderOptions{
 		XOptionHeader: &http.Header{
@@ -78,8 +80,6 @@ func (c *Cos) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl
 		return
 	}
 	uploadUrl = preassignedURL.String()
-	// 解决Golang JSON序列化时的HTML Escape
-	uploadUrl = c.escape(preassignedURL.String())
 
 	return
 }
@@ -98,7 +98,7 @@ func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ..
 	)
 
 	// 处理样式分隔符
-	fileKey := strings.Join(key.Paths(), c.config.Separator)
+	fileKey := strings.Join(key.Paths(), appliedOptions.separator)
 	// 检查文件是否存在，文件不存在没必要往下继续执行
 	if headRsp, err = c.client.Object.Head(ctx, fileKey, nil); nil != err {
 		if rspErr, ok := err.(*cos.ErrorResponse); ok && http.StatusNotFound == rspErr.Response.StatusCode {
@@ -135,16 +135,7 @@ func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ..
 	); nil != err {
 		return
 	}
-	// 解决Golang JSON序列化时的HTML Escape
-	downloadUrl = c.escape(preassignedURL.String())
+	downloadUrl = preassignedURL.String()
 
 	return
-}
-
-func (c *Cos) escape(url string) string {
-	url = strings.Replace(url, "\\u003c", "<", -1)
-	url = strings.Replace(url, "\\u003e", ">", -1)
-	url = strings.Replace(url, "\\u0026", "&", -1)
-
-	return url
 }
