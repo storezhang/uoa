@@ -22,8 +22,8 @@ type options struct {
 func defaultOptions() options {
 	return options{
 		expired:    24 * time.Hour,
-		isDownload: true,
-		isInline:   false,
+		isDownload: false,
+		isInline:   true,
 		separator:  "/",
 	}
 }
