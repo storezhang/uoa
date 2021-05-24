@@ -3,16 +3,16 @@ package uoa
 var _ option = (*optionInline)(nil)
 
 type optionInline struct {
-	isInline bool
+	inline bool
 }
 
 // Inline 配置应用名称
 func Inline() *optionInline {
 	return &optionInline{
-		isInline: true,
+		inline: true,
 	}
 }
 
 func (b *optionInline) apply(options *options) {
-	options.isInline = b.isInline
+	options.inline = b.inline
 }

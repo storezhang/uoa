@@ -3,108 +3,79 @@ package uoa
 import (
 	`context`
 	`crypto/tls`
+	`fmt`
 	`net/http`
 	`net/url`
-	`strings`
+	`sync`
 
-	`github.com/mcuadros/go-defaults`
 	`github.com/storezhang/gox`
-	`github.com/storezhang/validatorx`
 	`github.com/tencentyun/cos-go-sdk-v5`
 )
 
-type (
-	CosConfig struct {
-		// 授权
-		Secret gox.Secret `json:"secret" yaml:"secret" validate:"required"`
-		// 存储桶地址
-		Url string `json:"url" yaml:"url" validate:"required,url"`
-	}
+// Cos 腾讯云存储
+type Cos struct {
+	clientCache sync.Map
 
-	// Cos 腾讯云存储
-	Cos struct {
-		config CosConfig
-
-		client *cos.Client
-	}
-)
+	template uoaTemplate
+}
 
 // NewCos 创建腾讯云对象存储实现类
-func NewCos(config CosConfig) (client *Cos, err error) {
-	// 处理默认值
-	defaults.SetDefaults(&config)
-	if err = validatorx.Validate(config); nil != err {
-		return
+func NewCos() (cos *Cos) {
+	cos = &Cos{
+		clientCache: sync.Map{},
 	}
-
-	var bucketUrl *url.URL
-	if bucketUrl, err = url.Parse(config.Url); nil != err {
-		return
-	}
-
-	client = &Cos{
-		config: config,
-
-		client: cos.NewClient(&cos.BaseURL{BucketURL: bucketUrl}, &http.Client{
-			Transport: &cos.AuthorizationTransport{
-				SecretID:  config.Secret.Id,
-				SecretKey: config.Secret.Key,
-				// nolint:gosec
-				Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-			},
-		}),
-	}
+	cos.template = uoaTemplate{implementer: cos}
 
 	return
 }
 
 func (c *Cos) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl string, err error) {
-	appliedOptions := defaultOptions()
-	for _, opt := range opts {
-		opt.apply(appliedOptions)
-	}
+	return c.template.UploadUrl(ctx, key, opts...)
+}
 
-	// 处理样式分隔符
-	fileKey := strings.Join(key.Paths(), appliedOptions.separator)
-	var preassignedURL *url.URL
+func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ...option) (downloadUrl string, err error) {
+	return c.template.DownloadUrl(ctx, key, filename, opts...)
+}
+
+func (c *Cos) uploadUrl(ctx context.Context, key string, options *options) (uploadUrl *url.URL, err error) {
 	putOptions := cos.ObjectPutHeaderOptions{
 		XOptionHeader: &http.Header{
 			"Access-Control-Expose-Headers": []string{"ETag"},
 		},
 	}
+
+	var client *cos.Client
+	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
+		return
+	}
 	// 获取预签名URL
-	if preassignedURL, err = c.client.Object.GetPresignedURL(
+	if uploadUrl, err = client.Object.GetPresignedURL(
 		ctx,
 		http.MethodPut,
-		fileKey,
-		c.config.Secret.Id, c.config.Secret.Key,
-		appliedOptions.expired,
+		key,
+		options.secret.Id, options.secret.Key,
+		options.expired,
 		putOptions,
 	); nil != err {
 		return
 	}
-	uploadUrl = preassignedURL.String()
 
 	return
 }
 
-func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ...option) (downloadUrl string, err error) {
-	appliedOptions := defaultOptions()
-	for _, opt := range opts {
-		opt.apply(appliedOptions)
-	}
-
+func (c *Cos) downloadUrl(ctx context.Context, key string, filename string, options *options) (downloadUrl *url.URL, err error) {
 	var (
-		preassignedURL *url.URL
-		getOptions     *cos.ObjectGetOptions
-		headRsp        *cos.Response
-		contentType    string
+		client      *cos.Client
+		getOptions  *cos.ObjectGetOptions
+		headRsp     *cos.Response
+		contentType string
 	)
 
-	// 处理样式分隔符
-	fileKey := strings.Join(key.Paths(), appliedOptions.separator)
+	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
+		return
+	}
 	// 检查文件是否存在，文件不存在没必要往下继续执行
-	if headRsp, err = c.client.Object.Head(ctx, fileKey, nil); nil != err {
+	if headRsp, err = client.Object.Head(ctx, key, nil); nil != err {
 		if rspErr, ok := err.(*cos.ErrorResponse); ok && http.StatusNotFound == rspErr.Response.StatusCode {
 			err = nil
 		}
@@ -112,13 +83,13 @@ func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ..
 		return
 	}
 
-	if appliedOptions.isDownload {
+	if options.download {
 		getOptions = &cos.ObjectGetOptions{
 			ResponseContentDisposition: gox.ContentDisposition(filename, gox.ContentDispositionTypeAttachment),
 		}
-	} else if appliedOptions.isInline {
-		if "" != appliedOptions.contentType {
-			contentType = appliedOptions.contentType
+	} else if options.inline {
+		if "" != options.contentType {
+			contentType = options.contentType
 		} else {
 			contentType = headRsp.Header.Get(gox.HeaderContentType)
 		}
@@ -129,17 +100,47 @@ func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ..
 	}
 
 	// 获取预签名URL
-	if preassignedURL, err = c.client.Object.GetPresignedURL(
+	if downloadUrl, err = client.Object.GetPresignedURL(
 		ctx,
 		http.MethodGet,
-		fileKey,
-		c.config.Secret.Id, c.config.Secret.Key,
-		appliedOptions.expired,
+		key,
+		options.secret.Id, options.secret.Key,
+		options.expired,
 		getOptions,
 	); nil != err {
 		return
 	}
-	downloadUrl = preassignedURL.String()
+
+	return
+}
+
+func (c *Cos) getClient(baseUrl string, secret gox.Secret) (client *cos.Client, err error) {
+	var (
+		cache interface{}
+		ok    bool
+	)
+
+	key := fmt.Sprintf("%s-%s", baseUrl, secret.Id)
+	if cache, ok = c.clientCache.Load(key); ok {
+		client = cache.(*cos.Client)
+
+		return
+	}
+
+	var bucketUrl *url.URL
+	if bucketUrl, err = url.Parse(baseUrl); nil != err {
+		return
+	}
+
+	client = cos.NewClient(&cos.BaseURL{BucketURL: bucketUrl}, &http.Client{
+		Transport: &cos.AuthorizationTransport{
+			SecretID:  secret.Id,
+			SecretKey: secret.Key,
+			// nolint:gosec
+			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+		},
+	})
+	c.clientCache.Store(key, client)
 
 	return
 }

@@ -2,15 +2,21 @@ package uoa
 
 import (
 	`time`
+
+	`github.com/storezhang/gox`
 )
 
 type options struct {
+	// 通信端点
+	endpoint string
+	// 授权密钥
+	secret gox.Secret
 	// 过期时间
 	expired time.Duration
 	// 下载文件
-	isDownload bool
+	download bool
 	// 打开文件
-	isInline bool
+	inline bool
 	// 文件类型
 	contentType string
 	// 环境
@@ -21,9 +27,9 @@ type options struct {
 
 func defaultOptions() *options {
 	return &options{
-		expired:    24 * time.Hour,
-		isDownload: false,
-		isInline:   true,
-		separator:  "/",
+		expired:   24 * time.Hour,
+		download:  false,
+		inline:    true,
+		separator: "/",
 	}
 }

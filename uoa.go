@@ -15,18 +15,15 @@ type Uoa interface {
 }
 
 // New 创建适配器
-func New(config Config) (uoa Uoa, err error) {
-	var implementer Uoa
-
-	if err = validatorx.Validate(config); nil != err {
+func New(uoaType Type, validate *validatorx.Validate) (uoa Uoa, err error) {
+	if err = validate.Var(uoaType, "required,oneof=cos"); nil != err {
 		return
 	}
 
-	switch config.Type {
+	switch uoaType {
 	case TypeCos:
-		implementer, err = NewCos(config.Cos)
+		uoa = NewCos()
 	}
-	uoa = &uoaTemplate{uoa: implementer}
 
 	return
 }
