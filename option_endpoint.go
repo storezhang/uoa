@@ -16,9 +16,7 @@ func Endpoint(endpoint string) *optionEndpoint {
 
 // CosUrl 配置Cos地址
 func CosUrl(url string) *optionEndpoint {
-	return &optionEndpoint{
-		endpoint: url,
-	}
+	return Endpoint(url)
 }
 
 func (b *optionEndpoint) apply(options *options) {
