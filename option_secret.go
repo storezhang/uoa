@@ -1,5 +1,9 @@
 package uoa
 
+import (
+	`github.com/storezhang/gox`
+)
+
 var _ option = (*optionSecret)(nil)
 
 type optionSecret struct {
@@ -10,16 +14,19 @@ type optionSecret struct {
 }
 
 // Secret 配置授权
-func Secret(id string, key string) *optionSecret {
+func Secret(secret gox.Secret) *optionSecret {
 	return &optionSecret{
-		id:  id,
-		key: key,
+		id:  secret.Id,
+		key: secret.Key,
 	}
 }
 
 // Tencentyun 配置腾讯云授权
 func Tencentyun(secretId string, secretKey string) *optionSecret {
-	return Secret(secretId, secretKey)
+	return Secret(gox.Secret{
+		Id:  secretId,
+		Key: secretKey,
+	})
 }
 
 func (b *optionSecret) apply(options *options) {
