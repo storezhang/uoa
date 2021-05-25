@@ -23,6 +23,9 @@ type options struct {
 	environment string
 	// 分隔符
 	separator string
+
+	// 类型
+	uoaType Type
 }
 
 func defaultOptions() *options {

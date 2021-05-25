@@ -9,7 +9,7 @@ import (
 // 内部接口封装
 // 使用模板方法设计模式
 type uoaTemplate struct {
-	implementer uoaInternal
+	cos uoaInternal
 }
 
 func (t *uoaTemplate) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl string, err error) {
@@ -20,7 +20,11 @@ func (t *uoaTemplate) UploadUrl(ctx context.Context, key Key, opts ...option) (u
 
 	fileKey := t.fileKey(key, options.environment, options.separator)
 	var originalURL *url.URL
-	if originalURL, err = t.implementer.uploadUrl(ctx, fileKey, options); nil != err {
+	switch options.uoaType {
+	case TypeCos:
+		originalURL, err = t.cos.uploadUrl(ctx, fileKey, options)
+	}
+	if nil != err {
 		return
 	}
 	// 解决Golang JSON序列化时的HTML Escape
@@ -35,9 +39,13 @@ func (t *uoaTemplate) DownloadUrl(ctx context.Context, key Key, filename string,
 		opt.apply(options)
 	}
 
-	var originalURL *url.URL
 	fileKey := t.fileKey(key, options.environment, options.separator)
-	if originalURL, err = t.implementer.downloadUrl(ctx, fileKey, filename, options); nil != err {
+	var originalURL *url.URL
+	switch options.uoaType {
+	case TypeCos:
+		originalURL, err = t.cos.downloadUrl(ctx, fileKey, filename, options)
+	}
+	if nil != err {
 		return
 	}
 	// 解决Golang JSON序列化时的HTML Escape

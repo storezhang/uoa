@@ -24,7 +24,7 @@ func NewCos() (cos *Cos) {
 	cos = &Cos{
 		clientCache: sync.Map{},
 	}
-	cos.template = uoaTemplate{implementer: cos}
+	cos.template = uoaTemplate{cos: cos}
 
 	return
 }

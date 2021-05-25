@@ -2,8 +2,6 @@ package uoa
 
 import (
 	`context`
-
-	`github.com/storezhang/validatorx`
 )
 
 // Uoa 对象存储接口
@@ -15,15 +13,8 @@ type Uoa interface {
 }
 
 // New 创建适配器
-func New(uoaType Type, validate *validatorx.Validate) (uoa Uoa, err error) {
-	if err = validate.Var(uoaType, "required,oneof=cos"); nil != err {
-		return
+func New() Uoa {
+	return &uoaTemplate{
+		cos: NewCos(),
 	}
-
-	switch uoaType {
-	case TypeCos:
-		uoa = NewCos()
-	}
-
-	return
 }
