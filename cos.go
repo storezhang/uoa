@@ -94,7 +94,7 @@ func (c *Cos) url(ctx context.Context, key string, filename string, options *url
 	return
 }
 
-func (c *Cos) sts(_ context.Context, key string, options *stsOptions) (sts Sts, err error) {
+func (c *Cos) sts(_ context.Context, options *stsOptions, keys ...string) (sts Sts, err error) {
 	actions := []string{
 		// 简单上传
 		"name/cos:PutObject",
@@ -108,15 +108,17 @@ func (c *Cos) sts(_ context.Context, key string, options *stsOptions) (sts Sts, 
 		"name/cos:CompleteMultipartUpload",
 	}
 	region, appId, bucketName := c.parse(options.endpoint)
+	resources := make([]string, 0, len(keys))
+	for _, key := range keys {
+		resources = append(resources, fmt.Sprintf("qcs::cos:%s:uid/%s:%s/%s", region, appId, bucketName, key))
+	}
 	policy := cosPolicy{
 		Version: options.version,
 		Statements: []cosStatement{
 			{
-				Actions: actions,
-				Effect:  "allow",
-				Resource: []string{
-					fmt.Sprintf("qcs::cos:%s:uid/%s:%s/%s", region, appId, bucketName, key),
-				},
+				Actions:   actions,
+				Effect:    "allow",
+				Resources: resources,
 			},
 		},
 	}

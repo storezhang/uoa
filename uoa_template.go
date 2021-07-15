@@ -2,6 +2,7 @@ package uoa
 
 import (
 	`context`
+	`fmt`
 	`net/url`
 	`strings`
 )
@@ -19,9 +20,18 @@ func (t *uoaTemplate) Sts(ctx context.Context, path Path, opts ...stsOption) (st
 	}
 
 	key := t.key(path, options.environment, options.separator)
+	var keys []string
+	if 0 != len(options.patterns) {
+		keys = make([]string, 0, len(options.patterns))
+		for _, pattern := range options.patterns {
+			keys = append(keys, fmt.Sprintf("%s%s%s", key, options.separator, pattern))
+		}
+	} else {
+		keys = []string{key}
+	}
 	switch options.uoaType {
 	case TypeCos:
-		sts, err = t.cos.sts(ctx, key, options)
+		sts, err = t.cos.sts(ctx, options, keys...)
 	}
 
 	return

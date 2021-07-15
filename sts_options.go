@@ -11,6 +11,9 @@ type stsOptions struct {
 	url string
 	// 版本
 	version string
+
+	// 文件匹配
+	patterns []string
 }
 
 func defaultStsOptions() *stsOptions {

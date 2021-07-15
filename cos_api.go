@@ -7,7 +7,7 @@ type (
 		// 效力
 		Effect string `json:"effect,omitempty"`
 		// 资源
-		Resource []string `json:"resource,omitempty"`
+		Resources []string `json:"resource,omitempty"`
 		// 生效条件
 		Condition map[string]map[string]interface{} `json:"condition,omitempty"`
 	}
