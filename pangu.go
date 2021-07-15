@@ -5,9 +5,7 @@ import (
 )
 
 func init() {
-	app := pangu.New()
-
-	if err := app.Provides(
+	if err := pangu.New().Provides(
 		NewCos,
 		New,
 	); nil != err {

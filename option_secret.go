@@ -4,7 +4,7 @@ import (
 	`github.com/storezhang/gox`
 )
 
-var _ option = (*optionSecret)(nil)
+var _ urlOption = (*optionSecret)(nil)
 
 type optionSecret struct {
 	// 授权，类似于用户名
@@ -29,7 +29,12 @@ func Tencentyun(secretId string, secretKey string) *optionSecret {
 	})
 }
 
-func (b *optionSecret) apply(options *options) {
-	options.secret.Id = b.id
-	options.secret.Key = b.key
+func (s *optionSecret) applyUrl(options *urlOptions) {
+	options.secret.Id = s.id
+	options.secret.Key = s.key
+}
+
+func (s *optionSecret) applySts(options *stsOptions) {
+	options.secret.Id = s.id
+	options.secret.Key = s.key
 }

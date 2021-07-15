@@ -4,7 +4,7 @@ import (
 	`github.com/storezhang/gox`
 )
 
-var _ option = (*optionEnvironment)(nil)
+var _ urlOption = (*optionEnvironment)(nil)
 
 type optionEnvironment struct {
 	environment string
@@ -17,6 +17,10 @@ func Environment(environment gox.Environment) *optionEnvironment {
 	}
 }
 
-func (b *optionEnvironment) apply(options *options) {
-	options.environment = b.environment
+func (e *optionEnvironment) applyUrl(options *urlOptions) {
+	options.environment = e.environment
+}
+
+func (e *optionEnvironment) applySts(options *stsOptions) {
+	options.environment = e.environment
 }

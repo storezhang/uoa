@@ -1,6 +1,6 @@
 package uoa
 
-var _ option = (*optionSeparator)(nil)
+var _ urlOption = (*optionSeparator)(nil)
 
 type optionSeparator struct {
 	separator string
@@ -13,6 +13,10 @@ func Separator(separator string) *optionSeparator {
 	}
 }
 
-func (b *optionSeparator) apply(options *options) {
-	options.separator = b.separator
+func (s *optionSeparator) applyUrl(options *urlOptions) {
+	options.separator = s.separator
+}
+
+func (s *optionSeparator) applySts(options *stsOptions) {
+	options.separator = s.separator
 }

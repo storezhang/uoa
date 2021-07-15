@@ -29,41 +29,20 @@ func NewCos() (cos *Cos) {
 	return
 }
 
-func (c *Cos) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl string, err error) {
+func (c *Cos) UploadUrl(ctx context.Context, key Path, opts ...urlOption) (uploadUrl string, err error) {
 	return c.template.UploadUrl(ctx, key, opts...)
 }
 
-func (c *Cos) DownloadUrl(ctx context.Context, key Key, filename string, opts ...option) (downloadUrl string, err error) {
+func (c *Cos) DownloadUrl(ctx context.Context, key Path, filename string, opts ...urlOption) (downloadUrl string, err error) {
 	return c.template.DownloadUrl(ctx, key, filename, opts...)
 }
 
-func (c *Cos) uploadUrl(ctx context.Context, key string, options *options) (uploadUrl *url.URL, err error) {
-	putOptions := cos.ObjectPutHeaderOptions{
-		XOptionHeader: &http.Header{
-			"Access-Control-Expose-Headers": []string{"ETag"},
-		},
-	}
-
-	var client *cos.Client
-	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
-		return
-	}
-	// 获取预签名URL
-	if uploadUrl, err = client.Object.GetPresignedURL(
-		ctx,
-		http.MethodPut,
-		key,
-		options.secret.Id, options.secret.Key,
-		options.expired,
-		putOptions,
-	); nil != err {
-		return
-	}
+func (c *Cos) sts(ctx context.Context, path Path, opts ...stsOption) (sts Sts, err error) {
 
 	return
 }
 
-func (c *Cos) downloadUrl(ctx context.Context, key string, filename string, options *options) (downloadUrl *url.URL, err error) {
+func (c *Cos) downloadUrl(ctx context.Context, key string, filename string, options *urlOptions) (downloadUrl *url.URL, err error) {
 	var (
 		client      *cos.Client
 		getOptions  *cos.ObjectGetOptions

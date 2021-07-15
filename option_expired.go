@@ -4,7 +4,7 @@ import (
 	`time`
 )
 
-var _ option = (*optionExpired)(nil)
+var _ urlOption = (*optionExpired)(nil)
 
 type optionExpired struct {
 	expired time.Duration
@@ -17,6 +17,6 @@ func Expired(expired time.Duration) *optionExpired {
 	}
 }
 
-func (b *optionExpired) apply(options *options) {
+func (b *optionExpired) applyUrl(options *urlOptions) {
 	options.expired = b.expired
 }

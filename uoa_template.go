@@ -12,10 +12,10 @@ type uoaTemplate struct {
 	cos uoaInternal
 }
 
-func (t *uoaTemplate) UploadUrl(ctx context.Context, key Key, opts ...option) (uploadUrl string, err error) {
-	options := defaultOptions()
+func (t *uoaTemplate) UploadUrl(ctx context.Context, key Path, opts ...urlOption) (uploadUrl string, err error) {
+	options := defaultDownloadOptions()
 	for _, opt := range opts {
-		opt.apply(options)
+		opt.applyUrl(options)
 	}
 
 	fileKey := t.fileKey(key, options.environment, options.separator)
@@ -33,13 +33,13 @@ func (t *uoaTemplate) UploadUrl(ctx context.Context, key Key, opts ...option) (u
 	return
 }
 
-func (t *uoaTemplate) DownloadUrl(ctx context.Context, key Key, filename string, opts ...option) (downloadUrl string, err error) {
-	options := defaultOptions()
+func (t *uoaTemplate) DownloadUrl(ctx context.Context, path Path, filename string, opts ...urlOption) (downloadUrl string, err error) {
+	options := defaultDownloadOptions()
 	for _, opt := range opts {
-		opt.apply(options)
+		opt.applyUrl(options)
 	}
 
-	fileKey := t.fileKey(key, options.environment, options.separator)
+	fileKey := t.fileKey(path, options.environment, options.separator)
 	var originalURL *url.URL
 	switch options.uoaType {
 	case TypeCos:
@@ -54,7 +54,7 @@ func (t *uoaTemplate) DownloadUrl(ctx context.Context, key Key, filename string,
 	return
 }
 
-func (t *uoaTemplate) fileKey(key Key, environment string, separator string) (fileKey string) {
+func (t *uoaTemplate) fileKey(key Path, environment string, separator string) (fileKey string) {
 	paths := key.Paths()
 	if "" != environment {
 		paths = append([]string{environment}, paths...)
