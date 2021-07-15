@@ -7,10 +7,10 @@ import (
 type stsOptions struct {
 	baseOptions
 
+	// 通信地址
+	url string
 	// 版本
 	version string
-	// 区域
-	region string
 }
 
 func defaultStsOptions() *stsOptions {
@@ -19,7 +19,7 @@ func defaultStsOptions() *stsOptions {
 			expired:   30 * time.Minute,
 			separator: "/",
 		},
+		url:     "sts.tencentcloudapi.com",
 		version: "2.0",
-		region:  "ap-guangzhou",
 	}
 }

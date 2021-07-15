@@ -7,8 +7,6 @@ import (
 type urlOptions struct {
 	baseOptions
 
-	// 通信端点
-	endpoint string
 	// 下载文件
 	download bool
 	// 打开文件

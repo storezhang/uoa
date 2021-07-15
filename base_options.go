@@ -7,6 +7,8 @@ import (
 )
 
 type baseOptions struct {
+	// 通信端点
+	endpoint string
 	// 授权密钥
 	secret gox.Secret
 	// 过期时间

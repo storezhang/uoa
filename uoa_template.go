@@ -12,38 +12,32 @@ type uoaTemplate struct {
 	cos uoaInternal
 }
 
-func (t *uoaTemplate) UploadUrl(ctx context.Context, key Path, opts ...urlOption) (uploadUrl string, err error) {
-	options := defaultDownloadOptions()
+func (t *uoaTemplate) Sts(ctx context.Context, path Path, opts ...stsOption) (sts Sts, err error) {
+	options := defaultStsOptions()
 	for _, opt := range opts {
-		opt.applyUrl(options)
+		opt.applySts(options)
 	}
 
-	fileKey := t.fileKey(key, options.environment, options.separator)
-	var originalURL *url.URL
+	key := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		originalURL, err = t.cos.uploadUrl(ctx, fileKey, options)
+		sts, err = t.cos.sts(ctx, key, options)
 	}
-	if nil != err {
-		return
-	}
-	// 解决Golang JSON序列化时的HTML Escape
-	uploadUrl = t.escape(originalURL)
 
 	return
 }
 
 func (t *uoaTemplate) DownloadUrl(ctx context.Context, path Path, filename string, opts ...urlOption) (downloadUrl string, err error) {
-	options := defaultDownloadOptions()
+	options := defaultUrlOptions()
 	for _, opt := range opts {
 		opt.applyUrl(options)
 	}
 
-	fileKey := t.fileKey(path, options.environment, options.separator)
+	key := t.key(path, options.environment, options.separator)
 	var originalURL *url.URL
 	switch options.uoaType {
 	case TypeCos:
-		originalURL, err = t.cos.downloadUrl(ctx, fileKey, filename, options)
+		originalURL, err = t.cos.downloadUrl(ctx, key, filename, options)
 	}
 	if nil != err {
 		return
@@ -54,12 +48,12 @@ func (t *uoaTemplate) DownloadUrl(ctx context.Context, path Path, filename strin
 	return
 }
 
-func (t *uoaTemplate) fileKey(key Path, environment string, separator string) (fileKey string) {
-	paths := key.Paths()
+func (t *uoaTemplate) key(path Path, environment string, separator string) (key string) {
+	paths := path.Paths()
 	if "" != environment {
 		paths = append([]string{environment}, paths...)
 	}
-	fileKey = strings.Join(key.Paths(), separator)
+	key = strings.Join(path.Paths(), separator)
 
 	return
 }
