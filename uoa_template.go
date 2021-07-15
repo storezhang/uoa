@@ -27,7 +27,7 @@ func (t *uoaTemplate) Sts(ctx context.Context, path Path, opts ...stsOption) (st
 	return
 }
 
-func (t *uoaTemplate) DownloadUrl(ctx context.Context, path Path, filename string, opts ...urlOption) (downloadUrl string, err error) {
+func (t *uoaTemplate) Url(ctx context.Context, path Path, filename string, opts ...urlOption) (uri string, err error) {
 	options := defaultUrlOptions()
 	for _, opt := range opts {
 		opt.applyUrl(options)
@@ -37,13 +37,13 @@ func (t *uoaTemplate) DownloadUrl(ctx context.Context, path Path, filename strin
 	var originalURL *url.URL
 	switch options.uoaType {
 	case TypeCos:
-		originalURL, err = t.cos.downloadUrl(ctx, key, filename, options)
+		originalURL, err = t.cos.url(ctx, key, filename, options)
 	}
 	if nil != err {
 		return
 	}
 	// 解决Golang JSON序列化时的HTML Escape
-	downloadUrl = t.escape(originalURL)
+	uri = t.escape(originalURL)
 
 	return
 }

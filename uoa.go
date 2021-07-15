@@ -8,8 +8,8 @@ import (
 type Uoa interface {
 	// Sts 临时密钥
 	Sts(ctx context.Context, path Path, opts ...stsOption) (sts Sts, err error)
-	// DownloadUrl 下载地址
-	DownloadUrl(ctx context.Context, path Path, filename string, opts ...urlOption) (downloadUrl string, err error)
+	// Url 地址
+	Url(ctx context.Context, path Path, filename string, opts ...urlOption) (url string, err error)
 }
 
 // New 创建适配器

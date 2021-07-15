@@ -39,11 +39,11 @@ func (c *Cos) Sts(ctx context.Context, path Path, opts ...stsOption) (sts Sts, e
 	return c.template.Sts(ctx, path, opts...)
 }
 
-func (c *Cos) DownloadUrl(ctx context.Context, path Path, filename string, opts ...urlOption) (downloadUrl string, err error) {
-	return c.template.DownloadUrl(ctx, path, filename, opts...)
+func (c *Cos) Url(ctx context.Context, path Path, filename string, opts ...urlOption) (url string, err error) {
+	return c.template.Url(ctx, path, filename, opts...)
 }
 
-func (c *Cos) downloadUrl(ctx context.Context, key string, filename string, options *urlOptions) (downloadUrl *url.URL, err error) {
+func (c *Cos) url(ctx context.Context, key string, filename string, options *urlOptions) (url *url.URL, err error) {
 	var (
 		client      *cos.Client
 		getOptions  *cos.ObjectGetOptions
@@ -80,7 +80,7 @@ func (c *Cos) downloadUrl(ctx context.Context, key string, filename string, opti
 	}
 
 	// 获取预签名URL
-	if downloadUrl, err = client.Object.GetPresignedURL(
+	if url, err = client.Object.GetPresignedURL(
 		ctx,
 		http.MethodGet,
 		key,
