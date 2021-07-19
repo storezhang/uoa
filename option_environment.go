@@ -17,10 +17,14 @@ func Environment(environment gox.Environment) *optionEnvironment {
 	}
 }
 
+func (e *optionEnvironment) apply(options *options) {
+	options.environment = e.environment
+}
+
 func (e *optionEnvironment) applyUrl(options *urlOptions) {
 	options.environment = e.environment
 }
 
-func (e *optionEnvironment) applySts(options *stsOptions) {
+func (e *optionEnvironment) applyCredential(options *credentialsOptions) {
 	options.environment = e.environment
 }

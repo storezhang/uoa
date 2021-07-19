@@ -2,19 +2,25 @@ package uoa
 
 import (
 	`context`
+	`net/url`
+	`sync`
 )
 
 // Uoa 对象存储接口
 type Uoa interface {
-	// Sts 临时密钥
-	Sts(ctx context.Context, path Path, opts ...stsOption) (sts Sts, err error)
+	// Credentials 临时密钥
+	Credentials(ctx context.Context, path Path, opts ...credentialsOption) (credentials *Credentials, err error)
 	// Url 地址
-	Url(ctx context.Context, path Path, filename string, opts ...urlOption) (url string, err error)
+	Url(ctx context.Context, path Path, filename string, opts ...urlOption) (url *url.URL, err error)
 }
 
 // New 创建适配器
-func New() Uoa {
+func New(opts ...option) Uoa {
+	for _, opt := range opts {
+		opt.apply(defaultOptions)
+	}
+
 	return &uoaTemplate{
-		cos: NewCos(),
+		cos: &cosInternal{clientCache: sync.Map{}},
 	}
 }

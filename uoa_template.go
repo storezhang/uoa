@@ -13,10 +13,10 @@ type uoaTemplate struct {
 	cos uoaInternal
 }
 
-func (t *uoaTemplate) Sts(ctx context.Context, path Path, opts ...stsOption) (sts Sts, err error) {
-	options := defaultStsOptions()
+func (t *uoaTemplate) Credentials(ctx context.Context, path Path, opts ...credentialsOption) (credentials *Credentials, err error) {
+	options := defaultCredentialOptions()
 	for _, opt := range opts {
-		opt.applySts(options)
+		opt.applyCredential(options)
 	}
 
 	key := t.key(path, options.environment, options.separator)
@@ -29,31 +29,37 @@ func (t *uoaTemplate) Sts(ctx context.Context, path Path, opts ...stsOption) (st
 	} else {
 		keys = []string{key}
 	}
+
+	var base *credentialsBase
 	switch options.uoaType {
 	case TypeCos:
-		sts, err = t.cos.sts(ctx, options, keys...)
+		base, err = t.cos.credentials(ctx, options, keys...)
+	}
+	if nil != err {
+		return
+	}
+
+	// 注入通用字段
+	credentials = &Credentials{
+		credentialsBase: base,
+		Url:             options.endpoint,
+		Separator:       options.separator,
 	}
 
 	return
 }
 
-func (t *uoaTemplate) Url(ctx context.Context, path Path, filename string, opts ...urlOption) (uri string, err error) {
+func (t *uoaTemplate) Url(ctx context.Context, path Path, filename string, opts ...urlOption) (url *url.URL, err error) {
 	options := defaultUrlOptions()
 	for _, opt := range opts {
 		opt.applyUrl(options)
 	}
 
 	key := t.key(path, options.environment, options.separator)
-	var originalURL *url.URL
 	switch options.uoaType {
 	case TypeCos:
-		originalURL, err = t.cos.url(ctx, key, filename, options)
+		url, err = t.cos.url(ctx, key, filename, options)
 	}
-	if nil != err {
-		return
-	}
-	// 解决Golang JSON序列化时的HTML Escape
-	uri = t.escape(originalURL)
 
 	return
 }
@@ -66,13 +72,4 @@ func (t *uoaTemplate) key(path Path, environment string, separator string) (key 
 	key = strings.Join(path.Paths(), separator)
 
 	return
-}
-
-func (t *uoaTemplate) escape(originalURL *url.URL) (url string) {
-	url = originalURL.String()
-	url = strings.Replace(url, "\\u003c", "<", -1)
-	url = strings.Replace(url, "\\u003e", ">", -1)
-	url = strings.Replace(url, "\\u0026", "&", -1)
-
-	return url
 }

@@ -4,8 +4,7 @@ import (
 	`time`
 )
 
-// Sts 临时授权
-type Sts struct {
+type credentialsBase struct {
 	// 临时授权，相当于用户名
 	Id string `json:"id" yaml:"id" xml:"id"`
 	// 临时授权，相当于密码

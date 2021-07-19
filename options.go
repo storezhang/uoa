@@ -6,7 +6,12 @@ import (
 	`github.com/storezhang/gox`
 )
 
-type baseOptions struct {
+var defaultOptions = &options{
+	expired:   24 * time.Hour,
+	separator: "/",
+}
+
+type options struct {
 	// 通信端点
 	endpoint string
 	// 授权密钥

@@ -1,11 +1,7 @@
 package uoa
 
-import (
-	`time`
-)
-
 type urlOptions struct {
-	baseOptions
+	*options
 
 	// 下载文件
 	download bool
@@ -17,10 +13,8 @@ type urlOptions struct {
 
 func defaultUrlOptions() *urlOptions {
 	return &urlOptions{
-		baseOptions: baseOptions{
-			expired:   24 * time.Hour,
-			separator: "/",
-		},
+		options: defaultOptions,
+
 		download: false,
 		inline:   true,
 	}

@@ -7,10 +7,9 @@ import (
 var _ urlOption = (*optionSecret)(nil)
 
 type optionSecret struct {
-	// 授权，类似于用户名
-	id string
-	// 授权，类似于密码
-	key string
+	id      string
+	key     string
+	uoaType Type
 }
 
 // Secret 配置授权
@@ -23,18 +22,27 @@ func Secret(secret gox.Secret) *optionSecret {
 
 // Tencentyun 配置腾讯云授权
 func Tencentyun(secretId string, secretKey string) *optionSecret {
-	return Secret(gox.Secret{
-		Id:  secretId,
-		Key: secretKey,
-	})
+	return &optionSecret{
+		id:      secretId,
+		key:     secretKey,
+		uoaType: TypeCos,
+	}
+}
+
+func (s *optionSecret) apply(options *options) {
+	options.secret.Id = s.id
+	options.secret.Key = s.key
+	options.uoaType = s.uoaType
 }
 
 func (s *optionSecret) applyUrl(options *urlOptions) {
 	options.secret.Id = s.id
 	options.secret.Key = s.key
+	options.uoaType = s.uoaType
 }
 
-func (s *optionSecret) applySts(options *stsOptions) {
+func (s *optionSecret) applyCredential(options *credentialsOptions) {
 	options.secret.Id = s.id
 	options.secret.Key = s.key
+	options.uoaType = s.uoaType
 }

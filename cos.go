@@ -14,36 +14,18 @@ import (
 	`github.com/storezhang/gox`
 	`github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common`
 	`github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile`
-	`github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts/v20180813`
+	sts `github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts/v20180813`
 	`github.com/tencentyun/cos-go-sdk-v5`
 )
 
-// Cos 腾讯云存储
-type Cos struct {
+var _ uoaInternal = (*cosInternal)(nil)
+
+// cosInternal 腾讯云存储
+type cosInternal struct {
 	clientCache sync.Map
-
-	template uoaTemplate
 }
 
-// NewCos 创建腾讯云对象存储实现类
-func NewCos() (cos *Cos) {
-	cos = &Cos{
-		clientCache: sync.Map{},
-	}
-	cos.template = uoaTemplate{cos: cos}
-
-	return
-}
-
-func (c *Cos) Sts(ctx context.Context, path Path, opts ...stsOption) (sts Sts, err error) {
-	return c.template.Sts(ctx, path, opts...)
-}
-
-func (c *Cos) Url(ctx context.Context, path Path, filename string, opts ...urlOption) (url string, err error) {
-	return c.template.Url(ctx, path, filename, opts...)
-}
-
-func (c *Cos) url(ctx context.Context, key string, filename string, options *urlOptions) (url *url.URL, err error) {
+func (c *cosInternal) url(ctx context.Context, key string, filename string, options *urlOptions) (url *url.URL, err error) {
 	var (
 		client      *cos.Client
 		getOptions  *cos.ObjectGetOptions
@@ -94,7 +76,7 @@ func (c *Cos) url(ctx context.Context, key string, filename string, options *url
 	return
 }
 
-func (c *Cos) sts(_ context.Context, options *stsOptions, keys ...string) (sts Sts, err error) {
+func (c *cosInternal) credentials(_ context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error) {
 	actions := []string{
 		// 简单上传
 		"name/cos:PutObject",
@@ -137,19 +119,19 @@ func (c *Cos) sts(_ context.Context, options *stsOptions, keys ...string) (sts S
 	credential := common.NewCredential(options.secret.Id, options.secret.Key)
 	cpf := profile.NewClientProfile()
 	cpf.HttpProfile.Endpoint = options.url
-	client, _ := v20180813.NewClient(credential, region, cpf)
+	client, _ := sts.NewClient(credential, region, cpf)
 
-	req := v20180813.NewGetFederationTokenRequest()
-	req.Name = common.StringPtr("cos-sts-go")
+	req := sts.NewGetFederationTokenRequest()
+	req.Name = common.StringPtr("cos-credential-go")
 	req.Policy = common.StringPtr(string(policyBytes))
 	req.DurationSeconds = common.Uint64Ptr(uint64(options.expired / time.Second))
 
-	var rsp *v20180813.GetFederationTokenResponse
+	var rsp *sts.GetFederationTokenResponse
 	if rsp, err = client.GetFederationToken(req); nil != err {
 		return
 	}
 
-	sts = Sts{
+	credentials = &credentialsBase{
 		Id:      *rsp.Response.Credentials.TmpSecretId,
 		Key:     *rsp.Response.Credentials.TmpSecretKey,
 		Token:   *rsp.Response.Credentials.Token,
@@ -159,7 +141,7 @@ func (c *Cos) sts(_ context.Context, options *stsOptions, keys ...string) (sts S
 	return
 }
 
-func (c *Cos) getClient(baseUrl string, secret gox.Secret) (client *cos.Client, err error) {
+func (c *cosInternal) getClient(baseUrl string, secret gox.Secret) (client *cos.Client, err error) {
 	var (
 		cache interface{}
 		ok    bool
@@ -190,7 +172,7 @@ func (c *Cos) getClient(baseUrl string, secret gox.Secret) (client *cos.Client, 
 	return
 }
 
-func (c *Cos) parse(endpoint string) (region string, appId string, bucketName string) {
+func (c *cosInternal) parse(endpoint string) (region string, appId string, bucketName string) {
 	endpoint = strings.ReplaceAll(endpoint, "https://", "")
 	urls := strings.Split(endpoint, ".")
 	region = urls[2]

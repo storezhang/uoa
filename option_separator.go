@@ -13,10 +13,14 @@ func Separator(separator string) *optionSeparator {
 	}
 }
 
+func (s *optionSeparator) apply(options *options) {
+	options.separator = s.separator
+}
+
 func (s *optionSeparator) applyUrl(options *urlOptions) {
 	options.separator = s.separator
 }
 
-func (s *optionSeparator) applySts(options *stsOptions) {
+func (s *optionSeparator) applyCredential(options *credentialsOptions) {
 	options.separator = s.separator
 }
