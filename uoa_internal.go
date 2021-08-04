@@ -8,4 +8,5 @@ import (
 type uoaInternal interface {
 	credentials(ctx context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error)
 	url(ctx context.Context, key string, filename string, options *urlOptions) (downloadUrl *url.URL, err error)
+	delete(ctx context.Context, key string, options *deleteOptions) (err error)
 }

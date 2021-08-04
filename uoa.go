@@ -12,6 +12,8 @@ type Uoa interface {
 	Credentials(ctx context.Context, path Path, opts ...credentialsOption) (credentials *Credentials, err error)
 	// Url 地址
 	Url(ctx context.Context, path Path, filename string, opts ...urlOption) (url *url.URL, err error)
+	// Delete 删除
+	Delete(ctx context.Context, path Path, opts ...deleteOption) (err error)
 }
 
 // New 创建适配器

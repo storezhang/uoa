@@ -141,6 +141,23 @@ func (c *cosInternal) credentials(_ context.Context, options *credentialsOptions
 	return
 }
 
+func (c *cosInternal) delete(ctx context.Context, key string, options *deleteOptions) (err error) {
+	var client *cos.Client
+	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
+		return
+	}
+
+	opts := make([]*cos.ObjectDeleteOptions, 0, 0)
+	if "" != options.version {
+		opts = append(opts, &cos.ObjectDeleteOptions{
+			VersionId: options.version,
+		})
+	}
+	_, err = client.Object.Delete(ctx, key, opts...)
+
+	return
+}
+
 func (c *cosInternal) getClient(baseUrl string, secret gox.Secret) (client *cos.Client, err error) {
 	var (
 		cache interface{}

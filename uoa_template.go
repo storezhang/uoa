@@ -64,6 +64,21 @@ func (t *uoaTemplate) Url(ctx context.Context, path Path, filename string, opts 
 	return
 }
 
+func (t *uoaTemplate) Delete(ctx context.Context, path Path, opts ...deleteOption) (err error) {
+	options := defaultDeleteOptions()
+	for _, opt := range opts {
+		opt.applyDelete(options)
+	}
+
+	key := t.key(path, options.environment, options.separator)
+	switch options.uoaType {
+	case TypeCos:
+		err = t.cos.delete(ctx, key, options)
+	}
+
+	return
+}
+
 func (t *uoaTemplate) key(path Path, environment string, separator string) (key string) {
 	paths := path.Paths()
 	if "" != environment {
