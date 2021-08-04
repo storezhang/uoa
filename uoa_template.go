@@ -5,6 +5,8 @@ import (
 	`fmt`
 	`net/url`
 	`strings`
+
+	`github.com/tencentyun/cos-go-sdk-v5`
 )
 
 // 内部接口封装
@@ -59,6 +61,51 @@ func (t *uoaTemplate) Url(ctx context.Context, path Path, filename string, opts 
 	switch options.uoaType {
 	case TypeCos:
 		url, err = t.cos.url(ctx, key, filename, options)
+	}
+
+	return
+}
+
+func (t *uoaTemplate) InitiateMultipartUpload(ctx context.Context, path Path, opts ...multipartOption) (uploadId string, err error) {
+	options := defaultMultipartOptions()
+	for _, opt := range opts {
+		opt.applyMultipart(options)
+	}
+
+	fileKey := t.key(path, options.environment, options.separator)
+	switch options.uoaType {
+	case TypeCos:
+		uploadId, err = t.cos.initiateMultipartUpload(ctx, fileKey, options)
+	}
+
+	return
+}
+
+func (t *uoaTemplate) CompleteMultipartUpload(ctx context.Context, path Path, uploadId string, parts interface{}, opts ...multipartOption) (err error) {
+	options := defaultMultipartOptions()
+	for _, opt := range opts {
+		opt.applyMultipart(options)
+	}
+
+	fileKey := t.key(path, options.environment, options.separator)
+	switch options.uoaType {
+	case TypeCos:
+		err = t.cos.completeMultipartUpload(ctx, fileKey, uploadId, parts.([]cos.Object), options)
+	}
+
+	return
+}
+
+func (t *uoaTemplate) AbortMultipartUpload(ctx context.Context, path Path, uploadId string, opts ...multipartOption) (err error) {
+	options := defaultMultipartOptions()
+	for _, opt := range opts {
+		opt.applyMultipart(options)
+	}
+
+	fileKey := t.key(path, options.environment, options.separator)
+	switch options.uoaType {
+	case TypeCos:
+		err = t.cos.abortMultipartUpload(ctx, fileKey, uploadId, options)
 	}
 
 	return
