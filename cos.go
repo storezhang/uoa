@@ -76,6 +76,45 @@ func (c *cosInternal) url(ctx context.Context, key string, filename string, opti
 	return
 }
 
+func (c *cosInternal) initiateMultipartUpload(ctx context.Context, key string, options *multipartOptions) (uploadId string, err error) {
+	var client *cos.Client
+	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
+		return
+	}
+
+	var rsp *cos.InitiateMultipartUploadResult
+	if rsp, _, err = client.Object.InitiateMultipartUpload(ctx, key, nil); nil != err {
+		return
+	}
+
+	uploadId = rsp.UploadID
+
+	return
+}
+
+func (c *cosInternal) completeMultipartUpload(ctx context.Context, key string, uploadId string, parts []cos.Object, options *multipartOptions) (err error) {
+	var client *cos.Client
+	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
+		return
+	}
+
+	opt := &cos.CompleteMultipartUploadOptions{Parts: parts}
+	_, _, err = client.Object.CompleteMultipartUpload(ctx, key, uploadId, opt)
+
+	return
+}
+
+func (c *cosInternal) abortMultipartUpload(ctx context.Context, key string, uploadId string, options *multipartOptions) (err error) {
+	var client *cos.Client
+	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
+		return
+	}
+
+	_, err = client.Object.AbortMultipartUpload(ctx, key, uploadId)
+
+	return
+}
+
 func (c *cosInternal) credentials(_ context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error) {
 	actions := []string{
 		// 简单上传
