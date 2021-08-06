@@ -2,6 +2,8 @@ package uoa
 
 type multipartOptions struct {
 	*options
+
+	objects []object
 }
 
 func defaultMultipartOptions() *multipartOptions {

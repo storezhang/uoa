@@ -5,17 +5,15 @@ import (
 	`fmt`
 	`net/url`
 	`strings`
-
-	`github.com/tencentyun/cos-go-sdk-v5`
 )
 
 // 内部接口封装
 // 使用模板方法设计模式
-type uoaTemplate struct {
-	cos uoaInternal
+type template struct {
+	cos executor
 }
 
-func (t *uoaTemplate) Credentials(ctx context.Context, path Path, opts ...credentialsOption) (credentials *Credentials, err error) {
+func (t *template) Credentials(ctx context.Context, path Path, opts ...credentialsOption) (credentials *Credentials, err error) {
 	options := defaultCredentialOptions()
 	for _, opt := range opts {
 		opt.applyCredential(options)
@@ -51,7 +49,7 @@ func (t *uoaTemplate) Credentials(ctx context.Context, path Path, opts ...creden
 	return
 }
 
-func (t *uoaTemplate) Url(ctx context.Context, path Path, filename string, opts ...urlOption) (url *url.URL, err error) {
+func (t *template) Url(ctx context.Context, path Path, opts ...urlOption) (url *url.URL, err error) {
 	options := defaultUrlOptions()
 	for _, opt := range opts {
 		opt.applyUrl(options)
@@ -60,13 +58,13 @@ func (t *uoaTemplate) Url(ctx context.Context, path Path, filename string, opts 
 	key := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		url, err = t.cos.url(ctx, key, filename, options)
+		url, err = t.cos.url(ctx, key, options)
 	}
 
 	return
 }
 
-func (t *uoaTemplate) InitiateMultipartUpload(ctx context.Context, path Path, opts ...multipartOption) (uploadId string, err error) {
+func (t *template) InitiateMultipart(ctx context.Context, path Path, opts ...multipartOption) (uploadId string, err error) {
 	options := defaultMultipartOptions()
 	for _, opt := range opts {
 		opt.applyMultipart(options)
@@ -75,13 +73,13 @@ func (t *uoaTemplate) InitiateMultipartUpload(ctx context.Context, path Path, op
 	fileKey := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		uploadId, err = t.cos.initiateMultipartUpload(ctx, fileKey, options)
+		uploadId, err = t.cos.initiateMultipart(ctx, fileKey, options)
 	}
 
 	return
 }
 
-func (t *uoaTemplate) CompleteMultipartUpload(ctx context.Context, path Path, uploadId string, parts interface{}, opts ...multipartOption) (err error) {
+func (t *template) CompleteMultipart(ctx context.Context, path Path, uploadId string, objects []object, opts ...multipartOption) (err error) {
 	options := defaultMultipartOptions()
 	for _, opt := range opts {
 		opt.applyMultipart(options)
@@ -90,13 +88,13 @@ func (t *uoaTemplate) CompleteMultipartUpload(ctx context.Context, path Path, up
 	fileKey := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		err = t.cos.completeMultipartUpload(ctx, fileKey, uploadId, parts.([]cos.Object), options)
+		err = t.cos.completeMultipart(ctx, fileKey, uploadId, objects, options)
 	}
 
 	return
 }
 
-func (t *uoaTemplate) AbortMultipartUpload(ctx context.Context, path Path, uploadId string, opts ...multipartOption) (err error) {
+func (t *template) AbortMultipart(ctx context.Context, path Path, uploadId string, opts ...multipartOption) (err error) {
 	options := defaultMultipartOptions()
 	for _, opt := range opts {
 		opt.applyMultipart(options)
@@ -105,13 +103,13 @@ func (t *uoaTemplate) AbortMultipartUpload(ctx context.Context, path Path, uploa
 	fileKey := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		err = t.cos.abortMultipartUpload(ctx, fileKey, uploadId, options)
+		err = t.cos.abortMultipart(ctx, fileKey, uploadId, options)
 	}
 
 	return
 }
 
-func (t *uoaTemplate) Delete(ctx context.Context, path Path, opts ...deleteOption) (err error) {
+func (t *template) Delete(ctx context.Context, path Path, opts ...deleteOption) (err error) {
 	options := defaultDeleteOptions()
 	for _, opt := range opts {
 		opt.applyDelete(options)
@@ -126,7 +124,7 @@ func (t *uoaTemplate) Delete(ctx context.Context, path Path, opts ...deleteOptio
 	return
 }
 
-func (t *uoaTemplate) key(path Path, environment string, separator string) (key string) {
+func (t *template) key(path Path, environment string, separator string) (key string) {
 	paths := path.Paths()
 	if "" != environment {
 		paths = append([]string{environment}, paths...)
