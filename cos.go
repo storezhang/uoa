@@ -131,7 +131,7 @@ func (c *_cos) initiateMultipart(ctx context.Context, key string, options *multi
 	return
 }
 
-func (c *_cos) completeMultipart(ctx context.Context, key string, uploadId string, objects []object, options *multipartOptions) (err error) {
+func (c *_cos) completeMultipart(ctx context.Context, key string, uploadId string, objects []Object, options *multipartOptions) (err error) {
 	var client *cos.Client
 	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
 		return
@@ -139,13 +139,7 @@ func (c *_cos) completeMultipart(ctx context.Context, key string, uploadId strin
 
 	parts := make([]cos.Object, 0, len(objects))
 	for _, object := range objects {
-		parts = append(parts, cos.Object{
-			Key:        object.key,
-			ETag:       object.etag,
-			Size:       object.size,
-			PartNumber: int(object.part),
-			VersionId:  object.version,
-		})
+		parts = append(parts, object.cos())
 	}
 	opt := &cos.CompleteMultipartUploadOptions{Parts: parts}
 	_, _, err = client.Object.CompleteMultipartUpload(ctx, key, uploadId, opt)

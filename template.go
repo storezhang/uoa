@@ -79,7 +79,7 @@ func (t *template) InitiateMultipart(ctx context.Context, path Path, opts ...mul
 	return
 }
 
-func (t *template) CompleteMultipart(ctx context.Context, path Path, uploadId string, objects []object, opts ...multipartOption) (err error) {
+func (t *template) CompleteMultipart(ctx context.Context, path Path, uploadId string, objects []Object, opts ...multipartOption) (err error) {
 	options := defaultMultipartOptions()
 	for _, opt := range opts {
 		opt.applyMultipart(options)

@@ -3,7 +3,7 @@ package uoa
 type multipartOptions struct {
 	*options
 
-	objects []object
+	objects []Object
 }
 
 func defaultMultipartOptions() *multipartOptions {

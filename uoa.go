@@ -15,7 +15,7 @@ type Uoa interface {
 	// InitiateMultipart 初始化分块上传
 	InitiateMultipart(ctx context.Context, path Path, opts ...multipartOption) (uploadId string, err error)
 	// CompleteMultipart 完成分块上传
-	CompleteMultipart(ctx context.Context, path Path, uploadId string, objects []object, opts ...multipartOption) (err error)
+	CompleteMultipart(ctx context.Context, path Path, uploadId string, objects []Object, opts ...multipartOption) (err error)
 	// AbortMultipart 终止分块上传
 	AbortMultipart(ctx context.Context, path Path, uploadId string, opts ...multipartOption) (err error)
 	// Delete 删除
