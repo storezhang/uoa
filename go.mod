@@ -3,10 +3,13 @@ module github.com/storezhang/uoa
 go 1.16
 
 require (
-	github.com/storezhang/gox v1.5.3
+	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/storezhang/gox v1.7.2
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.209
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts v1.0.209
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.24
+	golang.org/x/crypto v0.0.0-20210812204632-0ba0e8f03122 // indirect
+	golang.org/x/text v0.3.7 // indirect
 )
 
 // replace github.com/storezhang/gox => ../gox

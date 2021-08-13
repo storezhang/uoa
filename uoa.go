@@ -9,7 +9,7 @@ import (
 // Uoa 对象存储接口
 type Uoa interface {
 	// Exist 检查文件是否存在
-	Exist(ctx context.Context, path Path) (exist bool, err error)
+	Exist(ctx context.Context, path Path, opts ...option) (exist bool, err error)
 
 	// Credentials 临时密钥
 	Credentials(ctx context.Context, path Path, opts ...credentialsOption) (credentials *Credentials, err error)
