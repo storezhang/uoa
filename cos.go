@@ -24,6 +24,25 @@ type _cos struct {
 	clientCache sync.Map
 }
 
+func (c *_cos) exist(ctx context.Context, key string, options *options) (exist bool, err error) {
+	var client *cos.Client
+	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
+		return
+	}
+
+	if headRsp, headErr := client.Object.Head(ctx, key, nil); nil != err {
+		if rspErr, ok := headErr.(*cos.ErrorResponse); ok && http.StatusNotFound == rspErr.Response.StatusCode {
+			exist = false
+		} else {
+			err = headErr
+		}
+	} else {
+		exist = nil != headRsp
+	}
+
+	return
+}
+
 func (c *_cos) credentials(_ context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error) {
 	actions := []string{
 		// 查询对象元数据
@@ -178,10 +197,6 @@ func (c *_cos) downloadUrl(ctx context.Context, client *cos.Client, key string, 
 	// 检查文件是否存在，文件不存在没必要往下继续执行
 	var headRsp *cos.Response
 	if headRsp, err = client.Object.Head(ctx, key, nil); nil != err {
-		if rspErr, ok := err.(*cos.ErrorResponse); ok && http.StatusNotFound == rspErr.Response.StatusCode {
-			err = nil
-		}
-
 		return
 	}
 

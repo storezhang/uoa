@@ -13,6 +13,21 @@ type template struct {
 	cos executor
 }
 
+func (t *template) Exist(ctx context.Context, path Path, opts ...option) (exist bool, err error) {
+	options := defaultOptions
+	for _, opt := range opts {
+		opt.apply(options)
+	}
+
+	key := t.key(path, options.environment, options.separator)
+	switch options.uoaType {
+	case TypeCos:
+		exist, err = t.cos.exist(ctx, key, options)
+	}
+
+	return
+}
+
 func (t *template) Credentials(ctx context.Context, path Path, opts ...credentialsOption) (credentials *Credentials, err error) {
 	options := defaultCredentialOptions()
 	for _, opt := range opts {
