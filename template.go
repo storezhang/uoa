@@ -144,7 +144,7 @@ func (t *template) key(path Path, environment string, separator string) (key str
 	if "" != environment {
 		paths = append([]string{environment}, paths...)
 	}
-	key = strings.Join(path.Paths(), separator)
+	key = strings.Join(paths, separator)
 
 	return
 }
