@@ -64,7 +64,7 @@ func (t *template) Credentials(ctx context.Context, path Path, opts ...credentia
 	return
 }
 
-func (t *template) Url(ctx context.Context, path Path, opts ...urlOption) (url *url.URL, err error) {
+func (t *template) Url(ctx context.Context, path Path, opts ...urlOption) (objectUrl *url.URL, err error) {
 	options := defaultUrlOptions()
 	for _, opt := range opts {
 		opt.applyUrl(options)
@@ -73,8 +73,12 @@ func (t *template) Url(ctx context.Context, path Path, opts ...urlOption) (url *
 	key := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		url, err = t.cos.url(ctx, key, options)
+		objectUrl, err = t.cos.url(ctx, key, options)
 	}
+	if nil != err {
+		return
+	}
+	objectUrl.RawPath, err = url.QueryUnescape(objectUrl.RawPath)
 
 	return
 }
