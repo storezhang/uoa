@@ -30,7 +30,7 @@ func (c *_cos) exist(ctx context.Context, key string, options *options) (exist b
 		return
 	}
 
-	if headRsp, headErr := client.Object.Head(ctx, key, nil); nil != err {
+	if headRsp, headErr := client.Object.Head(ctx, key, nil); nil != headErr {
 		if rspErr, ok := headErr.(*cos.ErrorResponse); ok && http.StatusNotFound == rspErr.Response.StatusCode {
 			exist = false
 		} else {
