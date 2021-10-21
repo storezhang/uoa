@@ -3,7 +3,6 @@ package uoa
 import (
 	`context`
 	`net/url`
-	`sync`
 )
 
 // Uoa 对象存储接口
@@ -37,6 +36,6 @@ func New(opts ...option) Uoa {
 	}
 
 	return &template{
-		cos: &_cos{clientCache: sync.Map{}},
+		cos: newCos(),
 	}
 }

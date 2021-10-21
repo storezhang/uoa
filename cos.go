@@ -22,6 +22,26 @@ var _ executor = (*_cos)(nil)
 
 type _cos struct {
 	clientCache sync.Map
+
+	paramCiProcess string
+	paramPm3u8     string
+	paramExpires   string
+
+	expiresMin float64
+	expiresMax float64
+}
+
+func newCos() *_cos {
+	return &_cos{
+		clientCache: sync.Map{},
+
+		paramCiProcess: `ci-process`,
+		paramPm3u8:     `pm3u8`,
+		paramExpires:   `expires`,
+
+		expiresMin: 3600,
+		expiresMax: 43200,
+	}
 }
 
 func (c *_cos) exist(ctx context.Context, key string, options *options) (exist bool, err error) {
@@ -46,42 +66,42 @@ func (c *_cos) exist(ctx context.Context, key string, options *options) (exist b
 func (c *_cos) credentials(_ context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error) {
 	actions := []string{
 		// 查询对象元数据
-		"name/cos:HeadObject",
+		`name/cos:HeadObject`,
 		// 下载对象
-		"name/cos:GetObject",
+		`name/cos:GetObject`,
 	}
 	if streamTypeDownstream == options.streamType {
 		actions = []string{
 			// 简单上传
-			"name/cos:PutObject",
+			`name/cos:PutObject`,
 			// 表单上传、小程序上传
-			"name/cos:PostObject",
+			`name/cos:PostObject`,
 			// 分块上传：初始化分块操作
-			"name/cos:InitiateMultipartUpload",
+			`name/cos:InitiateMultipartUpload`,
 			// 分块上传：列举进行中的分块上传
-			"name/cos:ListMultipartUploads",
+			`name/cos:ListMultipartUploads`,
 			// 分块上传：列举已上传分块操作
-			"name/cos:ListParts",
+			`name/cos:ListParts`,
 			// 分块上传：上传分块块操作
-			"name/cos:UploadPart",
+			`name/cos:UploadPart`,
 			// 分块上传：完成所有分块上传操作
-			"name/cos:CompleteMultipartUpload",
+			`name/cos:CompleteMultipartUpload`,
 			// 取消分块上传操作
-			"name/cos:AbortMultipartUpload",
+			`name/cos:AbortMultipartUpload`,
 		}
 	}
 
 	region, appId, bucketName := c.parse(options.endpoint)
 	resources := make([]string, 0, len(keys))
 	for _, key := range keys {
-		resources = append(resources, fmt.Sprintf("qcs::cos:%s:uid/%s:%s/%s", region, appId, bucketName, key))
+		resources = append(resources, fmt.Sprintf(`qcs::cos:%s:uid/%s:%s/%s`, region, appId, bucketName, key))
 	}
 	policy := cosPolicy{
 		Version: options.version,
 		Statements: []cosStatement{
 			{
 				Actions:   actions,
-				Effect:    "allow",
+				Effect:    `allow`,
 				Resources: resources,
 			},
 		},
@@ -98,7 +118,7 @@ func (c *_cos) credentials(_ context.Context, options *credentialsOptions, keys 
 	client, _ := sts.NewClient(credential, region, cpf)
 
 	req := sts.NewGetFederationTokenRequest()
-	req.Name = common.StringPtr("cos-credential-go")
+	req.Name = common.StringPtr(`cos-credential-go`)
 	req.Policy = common.StringPtr(string(policyBytes))
 	req.DurationSeconds = common.Uint64Ptr(uint64(options.expired / time.Second))
 
@@ -183,7 +203,7 @@ func (c *_cos) delete(ctx context.Context, key string, options *deleteOptions) (
 	}
 
 	opts := make([]*cos.ObjectDeleteOptions, 0, 0)
-	if "" != options.version {
+	if `` != options.version {
 		opts = append(opts, &cos.ObjectDeleteOptions{
 			VersionId: options.version,
 		})
@@ -195,8 +215,8 @@ func (c *_cos) delete(ctx context.Context, key string, options *deleteOptions) (
 
 func (c *_cos) downloadUrl(ctx context.Context, client *cos.Client, key string, options *urlOptions) (url *url.URL, err error) {
 	// 检查文件是否存在，文件不存在没必要往下继续执行
-	var headRsp *cos.Response
-	if headRsp, err = client.Object.Head(ctx, key, nil); nil != err {
+	var rsp *cos.Response
+	if rsp, err = client.Object.Head(ctx, key, nil); nil != err {
 		return
 	}
 
@@ -207,10 +227,10 @@ func (c *_cos) downloadUrl(ctx context.Context, client *cos.Client, key string, 
 		}
 	} else if options.inline {
 		var contentType string
-		if "" != options.contentType {
+		if `` != options.contentType {
 			contentType = options.contentType
 		} else {
-			contentType = headRsp.Header.Get(gox.HeaderContentType)
+			contentType = rsp.Header.Get(gox.HeaderContentType)
 		}
 		getOptions = &cos.ObjectGetOptions{
 			ResponseContentDisposition: gox.ContentDisposition(options.filename, gox.ContentDispositionTypeInline),
@@ -228,13 +248,22 @@ func (c *_cos) downloadUrl(ctx context.Context, client *cos.Client, key string, 
 		getOptions,
 	)
 
+	// 解析私有M3u8存储文件
+	if !options.pm3u8 {
+		return
+	}
+
+	query := url.Query()
+	query.Add(c.paramCiProcess, c.paramPm3u8)
+	query.Add(c.paramExpires, c.expires(options.options))
+
 	return
 }
 
 func (c *_cos) uploadUrl(ctx context.Context, client *cos.Client, key string, options *urlOptions) (url *url.URL, err error) {
 	putOptions := cos.ObjectPutHeaderOptions{
 		XOptionHeader: &http.Header{
-			"Access-Control-Expose-Headers": []string{"ETag"},
+			`Access-Control-Expose-Headers`: []string{`ETag`},
 		},
 	}
 	// 获取预签名URL
@@ -255,7 +284,7 @@ func (c *_cos) getClient(baseUrl string, secret gox.Secret) (client *cos.Client,
 		ok    bool
 	)
 
-	key := fmt.Sprintf("%s-%s", baseUrl, secret.Id)
+	key := fmt.Sprintf(`%s-%s`, baseUrl, secret.Id)
 	if cache, ok = c.clientCache.Load(key); ok {
 		client = cache.(*cos.Client)
 
@@ -281,11 +310,23 @@ func (c *_cos) getClient(baseUrl string, secret gox.Secret) (client *cos.Client,
 }
 
 func (c *_cos) parse(endpoint string) (region string, appId string, bucketName string) {
-	endpoint = strings.ReplaceAll(endpoint, "https://", "")
-	urls := strings.Split(endpoint, ".")
+	endpoint = strings.ReplaceAll(endpoint, `https://`, ``)
+	urls := strings.Split(endpoint, `.`)
 	region = urls[2]
 	bucketName = urls[0]
-	appId = strings.Split(urls[0], "-")[1]
+	appId = strings.Split(urls[0], `-`)[1]
 
 	return
+}
+
+func (c *_cos) expires(options *options) string {
+	expires := options.expired.Seconds()
+	if expires < c.expiresMin {
+		expires = c.expiresMin
+	}
+	if expires > c.expiresMax {
+		expires = c.expiresMax
+	}
+
+	return fmt.Sprintf(`%f`, expires)
 }
