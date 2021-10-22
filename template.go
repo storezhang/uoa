@@ -1,19 +1,20 @@
 package uoa
 
 import (
-	`context`
-	`fmt`
-	`net/url`
-	`strings`
+	"context"
+	"fmt"
+	"net/url"
+	"strings"
 )
 
 // 内部接口封装
 // 使用模板方法设计模式
 type template struct {
 	cos executor
+	s3  executor
 }
 
-func (t *template) Exist(ctx context.Context, path Path, opts ...option) (exist bool, err error) {
+func (t *template) Exist(ctx context.Context, bucket string, path Path, opts ...option) (exist bool, err error) {
 	options := defaultOptions
 	for _, opt := range opts {
 		opt.apply(options)
@@ -22,7 +23,9 @@ func (t *template) Exist(ctx context.Context, path Path, opts ...option) (exist 
 	key := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		exist, err = t.cos.exist(ctx, key, options)
+		exist, err = t.cos.exist(ctx, bucket, key, options)
+	case TypeS3:
+		exist, err = t.s3.exist(ctx, bucket, key, options)
 	}
 
 	return
@@ -49,6 +52,8 @@ func (t *template) Credentials(ctx context.Context, path Path, opts ...credentia
 	switch options.uoaType {
 	case TypeCos:
 		base, err = t.cos.credentials(ctx, options, keys...)
+	case TypeS3:
+		base, err = t.s3.credentials(ctx, options, key)
 	}
 	if nil != err {
 		return
@@ -64,7 +69,7 @@ func (t *template) Credentials(ctx context.Context, path Path, opts ...credentia
 	return
 }
 
-func (t *template) Url(ctx context.Context, path Path, opts ...urlOption) (url *url.URL, err error) {
+func (t *template) Url(ctx context.Context, bucket string, path Path, opts ...urlOption) (url *url.URL, err error) {
 	options := defaultUrlOptions()
 	for _, opt := range opts {
 		opt.applyUrl(options)
@@ -73,7 +78,9 @@ func (t *template) Url(ctx context.Context, path Path, opts ...urlOption) (url *
 	key := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		url, err = t.cos.url(ctx, key, options)
+		url, err = t.cos.url(ctx, bucket, key, options)
+	case TypeS3:
+		url, err = t.s3.url(ctx, bucket, key, options)
 	}
 
 	return
@@ -89,6 +96,8 @@ func (t *template) InitiateMultipart(ctx context.Context, path Path, opts ...mul
 	switch options.uoaType {
 	case TypeCos:
 		uploadId, err = t.cos.initiateMultipart(ctx, fileKey, options)
+	case TypeS3:
+		uploadId, err = t.s3.initiateMultipart(ctx, fileKey, options)
 	}
 
 	return
@@ -104,6 +113,8 @@ func (t *template) CompleteMultipart(ctx context.Context, path Path, uploadId st
 	switch options.uoaType {
 	case TypeCos:
 		err = t.cos.completeMultipart(ctx, fileKey, uploadId, objects, options)
+	case TypeS3:
+		err = t.s3.completeMultipart(ctx, fileKey, uploadId, objects, options)
 	}
 
 	return
@@ -119,6 +130,8 @@ func (t *template) AbortMultipart(ctx context.Context, path Path, uploadId strin
 	switch options.uoaType {
 	case TypeCos:
 		err = t.cos.abortMultipart(ctx, fileKey, uploadId, options)
+	case TypeS3:
+		err = t.s3.abortMultipart(ctx, fileKey, uploadId, options)
 	}
 
 	return
@@ -134,6 +147,8 @@ func (t *template) Delete(ctx context.Context, path Path, opts ...deleteOption) 
 	switch options.uoaType {
 	case TypeCos:
 		err = t.cos.delete(ctx, key, options)
+	case TypeS3:
+		err = t.s3.delete(ctx, key, options)
 	}
 
 	return

@@ -1,21 +1,21 @@
 package uoa
 
 import (
-	`context`
-	`crypto/tls`
-	`encoding/json`
-	`fmt`
-	`net/http`
-	`net/url`
-	`strings`
-	`sync`
-	`time`
+	"context"
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+	"sync"
+	"time"
 
-	`github.com/storezhang/gox`
-	`github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common`
-	`github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile`
-	sts `github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts/v20180813`
-	`github.com/tencentyun/cos-go-sdk-v5`
+	"github.com/storezhang/gox"
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
+	sts "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts/v20180813"
+	"github.com/tencentyun/cos-go-sdk-v5"
 )
 
 var _ executor = (*_cos)(nil)
@@ -44,7 +44,7 @@ func newCos() *_cos {
 	}
 }
 
-func (c *_cos) exist(ctx context.Context, key string, options *options) (exist bool, err error) {
+func (c *_cos) exist(ctx context.Context, bucket string, key string, options *options) (exist bool, err error) {
 	var client *cos.Client
 	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
 		return
@@ -137,7 +137,7 @@ func (c *_cos) credentials(_ context.Context, options *credentialsOptions, keys 
 	return
 }
 
-func (c *_cos) url(ctx context.Context, key string, options *urlOptions) (url *url.URL, err error) {
+func (c *_cos) url(ctx context.Context, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
 	var client *cos.Client
 	if client, err = c.getClient(options.endpoint, options.secret); nil != err {
 		return
