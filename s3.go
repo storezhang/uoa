@@ -23,6 +23,19 @@ type _s3 struct {
 	expiresMax float64
 }
 
+func newS3() *_s3 {
+	return &_s3{
+		clientCache: sync.Map{},
+
+		paramCiProcess: `ci-process`,
+		paramPm3u8:     `pm3u8`,
+		paramExpires:   `expires`,
+
+		expiresMin: 3600,
+		expiresMax: 43200,
+	}
+}
+
 func newS3Client(options *options) (s *s3.S3, err error) {
 	var sess *session.Session
 	sess, err = session.NewSession(&aws.Config{

@@ -1,7 +1,7 @@
 package uoa
 
 import (
-	`github.com/storezhang/gox`
+	"github.com/storezhang/gox"
 )
 
 var _ urlOption = (*optionSecret)(nil)
@@ -26,6 +26,15 @@ func Tencentyun(secretId string, secretKey string) *optionSecret {
 		id:      secretId,
 		key:     secretKey,
 		uoaType: TypeCos,
+	}
+}
+
+// S3 配置授权
+func S3(secretId string, secretKey string) *optionSecret {
+	return &optionSecret{
+		id:      secretId,
+		key:     secretKey,
+		uoaType: TypeS3,
 	}
 }
 

@@ -37,5 +37,6 @@ func New(opts ...option) Uoa {
 
 	return &template{
 		cos: newCos(),
+		s3:  newS3(),
 	}
 }
