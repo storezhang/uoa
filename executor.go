@@ -1,8 +1,8 @@
 package uoa
 
 import (
-	"context"
-	"net/url"
+	`context`
+	`net/url`
 )
 
 type executor interface {

@@ -1,21 +1,21 @@
 package uoa
 
 import (
-	"context"
-	"crypto/tls"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
-	"sync"
-	"time"
+	`context`
+	`crypto/tls`
+	`encoding/json`
+	`fmt`
+	`net/http`
+	`net/url`
+	`strings`
+	`sync`
+	`time`
 
-	"github.com/storezhang/gox"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
-	sts "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts/v20180813"
-	"github.com/tencentyun/cos-go-sdk-v5"
+	`github.com/storezhang/gox`
+	`github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common`
+	`github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile`
+	sts `github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts/v20180813`
+	`github.com/tencentyun/cos-go-sdk-v5`
 )
 
 var _ executor = (*_cos)(nil)

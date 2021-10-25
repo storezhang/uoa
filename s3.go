@@ -1,16 +1,16 @@
 package uoa
 
 import (
-	"context"
-	"fmt"
-	"net/url"
-	"sync"
-	"time"
+	`context`
+	`fmt`
+	`net/url`
+	`sync`
+	`time`
 
-	"github.com/aws/aws-sdk-go/aws"
-	c "github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	`github.com/aws/aws-sdk-go/aws`
+	c `github.com/aws/aws-sdk-go/aws/credentials`
+	`github.com/aws/aws-sdk-go/aws/session`
+	`github.com/aws/aws-sdk-go/service/s3`
 )
 
 type _s3 struct {

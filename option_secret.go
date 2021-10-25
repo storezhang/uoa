@@ -1,7 +1,7 @@
 package uoa
 
 import (
-	"github.com/storezhang/gox"
+	`github.com/storezhang/gox`
 )
 
 var _ urlOption = (*optionSecret)(nil)

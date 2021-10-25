@@ -1,10 +1,10 @@
 package uoa
 
 import (
-	"context"
-	"fmt"
-	"net/url"
-	"strings"
+	`context`
+	`fmt`
+	`net/url`
+	`strings`
 )
 
 // 内部接口封装
