@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-type _aws struct {
+type _s3 struct {
 	clientCache    sync.Map
 	paramCiProcess string
 	paramPm3u8     string
@@ -29,14 +29,15 @@ func newS3Client(options *options) (s *s3.S3, err error) {
 		Credentials: c.NewStaticCredentials(options.secret.Id, options.secret.Key, ""),
 	})
 	s = s3.New(sess)
+
 	return
 }
 
-func (a *_aws) exist(ctx context.Context, bucket string, key string, options *options) (exist bool, err error) {
+func (a *_s3) exist(ctx context.Context, bucket string, key string, options *options) (exist bool, err error) {
 	var client *s3.S3
 	client, err = newS3Client(options)
 	if nil != err {
-		return false, err
+		return
 	}
 
 	if headRsp, headErr := client.HeadObjectWithContext(ctx, &s3.HeadObjectInput{
@@ -48,14 +49,16 @@ func (a *_aws) exist(ctx context.Context, bucket string, key string, options *op
 	} else {
 		exist = nil != headRsp
 	}
+
 	return
 }
 
-func (a *_aws) credentials(ctx context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error) {
+func (a *_s3) credentials(ctx context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error) {
 	credential := c.NewStaticCredentials(options.secret.Id, options.secret.Key, "")
 
-	val, errGet := credential.Get()
-	if nil != errGet {
+	var val c.Value
+	val, err = credential.Get()
+	if nil != err {
 		return
 	}
 
@@ -70,7 +73,7 @@ func (a *_aws) credentials(ctx context.Context, options *credentialsOptions, key
 	return
 }
 
-func (a *_aws) url(ctx context.Context, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
+func (a *_s3) url(ctx context.Context, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
 	var client *s3.S3
 	client, err = newS3Client(options.options)
 	if nil != err {
@@ -89,7 +92,7 @@ func (a *_aws) url(ctx context.Context, bucket string, key string, options *urlO
 	return
 }
 
-func (a *_aws) initiateMultipart(ctx context.Context, key string, options *multipartOptions) (uploadId string, err error) {
+func (a *_s3) initiateMultipart(ctx context.Context, key string, options *multipartOptions) (uploadId string, err error) {
 	var client *s3.S3
 	client, err = newS3Client(options.options)
 	if nil != err {
@@ -108,7 +111,7 @@ func (a *_aws) initiateMultipart(ctx context.Context, key string, options *multi
 	return
 }
 
-func (a *_aws) completeMultipart(ctx context.Context, key string, uploadId string, objects []Object, options *multipartOptions) (err error) {
+func (a *_s3) completeMultipart(ctx context.Context, key string, uploadId string, objects []Object, options *multipartOptions) (err error) {
 	var client *s3.S3
 	client, err = newS3Client(options.options)
 	if nil != err {
@@ -135,7 +138,7 @@ func (a *_aws) completeMultipart(ctx context.Context, key string, uploadId strin
 	return
 }
 
-func (a *_aws) abortMultipart(ctx context.Context, key string, uploadId string, options *multipartOptions) (err error) {
+func (a *_s3) abortMultipart(ctx context.Context, key string, uploadId string, options *multipartOptions) (err error) {
 	var client *s3.S3
 	client, err = newS3Client(options.options)
 	if nil != err {
@@ -147,10 +150,11 @@ func (a *_aws) abortMultipart(ctx context.Context, key string, uploadId string, 
 		Key:      aws.String(key),
 		UploadId: aws.String(uploadId),
 	})
+
 	return
 }
 
-func (a *_aws) delete(ctx context.Context, key string, options *deleteOptions) (err error) {
+func (a *_s3) delete(ctx context.Context, key string, options *deleteOptions) (err error) {
 	var client *s3.S3
 	client, err = newS3Client(options.options)
 	if nil != err {
@@ -160,10 +164,11 @@ func (a *_aws) delete(ctx context.Context, key string, options *deleteOptions) (
 		Bucket: aws.String(options.bucket),
 		Key:    aws.String(key),
 	})
+
 	return
 }
 
-func (a *_aws) uploadUrl(ctx context.Context, client *s3.S3, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
+func (a *_s3) uploadUrl(ctx context.Context, client *s3.S3, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
 	putOption := &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -178,14 +183,16 @@ func (a *_aws) uploadUrl(ctx context.Context, client *s3.S3, bucket string, key 
 		return
 	}
 	url, err = url.Parse(urlStr)
+
 	return
 }
 
-func (a *_aws) downloadUrl(ctx context.Context, client *s3.S3, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
+func (a *_s3) downloadUrl(ctx context.Context, client *s3.S3, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
 	// 检查文件是否存在，文件不存在没必要往下继续执行
-	exist, _ := a.exist(ctx, bucket, key, options.options)
-	if !exist {
-		return nil, err
+	var exist bool
+	exist, err = a.exist(ctx, bucket, key, options.options)
+	if !exist || nil != err {
+		return
 	}
 
 	getOption := &s3.GetObjectInput{
@@ -211,10 +218,11 @@ func (a *_aws) downloadUrl(ctx context.Context, client *s3.S3, bucket string, ke
 	query := url.Query()
 	query.Add(a.paramCiProcess, a.paramPm3u8)
 	query.Add(a.paramExpires, a.expires(options.options))
+
 	return
 }
 
-func (a *_aws) expires(options *options) string {
+func (a *_s3) expires(options *options) string {
 	expires := options.expired.Seconds()
 	if expires < a.expiresMin {
 		expires = a.expiresMin
