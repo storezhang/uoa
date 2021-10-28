@@ -126,6 +126,7 @@ func (a *_s3) initiateMultipart(ctx context.Context, key string, options *multip
 
 func (a *_s3) completeMultipart(ctx context.Context, key string, uploadId string, objects []Object, options *multipartOptions) (err error) {
 	var client *s3.S3
+	var partNum int64
 	client, err = newS3Client(options.options)
 	if nil != err {
 		return
@@ -133,9 +134,10 @@ func (a *_s3) completeMultipart(ctx context.Context, key string, uploadId string
 
 	parts := make([]*s3.CompletedPart, 0, len(objects))
 	for _, object := range objects {
+		partNum = int64(object.part)
 		parts = append(parts, &s3.CompletedPart{
 			ETag:       &object.etag,
-			PartNumber: &object.size,
+			PartNumber: &partNum,
 		})
 	}
 	partsUpload := &s3.CompletedMultipartUpload{

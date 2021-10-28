@@ -12,6 +12,7 @@ import (
 type template struct {
 	cos executor
 	s3  executor
+	obs executor
 }
 
 func (t *template) Exist(ctx context.Context, bucket string, path Path, opts ...option) (exist bool, err error) {
@@ -26,6 +27,10 @@ func (t *template) Exist(ctx context.Context, bucket string, path Path, opts ...
 		exist, err = t.cos.exist(ctx, bucket, key, options)
 	case TypeS3:
 		exist, err = t.s3.exist(ctx, bucket, key, options)
+	case TypeObs:
+		exist, err = t.obs.exist(ctx, bucket, key, options)
+	default:
+		exist, err = t.cos.exist(ctx, bucket, key, options)
 	}
 
 	return
@@ -53,7 +58,11 @@ func (t *template) Credentials(ctx context.Context, path Path, opts ...credentia
 	case TypeCos:
 		base, err = t.cos.credentials(ctx, options, keys...)
 	case TypeS3:
-		base, err = t.s3.credentials(ctx, options, key)
+		base, err = t.s3.credentials(ctx, options, keys...)
+	case TypeObs:
+		base, err = t.obs.credentials(ctx, options, keys...)
+	default:
+		base, err = t.cos.credentials(ctx, options, keys...)
 	}
 	if nil != err {
 		return
@@ -81,6 +90,10 @@ func (t *template) Url(ctx context.Context, bucket string, path Path, opts ...ur
 		url, err = t.cos.url(ctx, bucket, key, options)
 	case TypeS3:
 		url, err = t.s3.url(ctx, bucket, key, options)
+	case TypeObs:
+		url, err = t.obs.url(ctx, bucket, key, options)
+	default:
+		url, err = t.cos.url(ctx, bucket, key, options)
 	}
 
 	return
@@ -98,6 +111,10 @@ func (t *template) InitiateMultipart(ctx context.Context, path Path, opts ...mul
 		uploadId, err = t.cos.initiateMultipart(ctx, fileKey, options)
 	case TypeS3:
 		uploadId, err = t.s3.initiateMultipart(ctx, fileKey, options)
+	case TypeObs:
+		uploadId, err = t.obs.initiateMultipart(ctx, fileKey, options)
+	default:
+		uploadId, err = t.cos.initiateMultipart(ctx, fileKey, options)
 	}
 
 	return
@@ -115,6 +132,10 @@ func (t *template) CompleteMultipart(ctx context.Context, path Path, uploadId st
 		err = t.cos.completeMultipart(ctx, fileKey, uploadId, objects, options)
 	case TypeS3:
 		err = t.s3.completeMultipart(ctx, fileKey, uploadId, objects, options)
+	case TypeObs:
+		err = t.obs.completeMultipart(ctx, fileKey, uploadId, objects, options)
+	default:
+		err = t.cos.completeMultipart(ctx, fileKey, uploadId, objects, options)
 	}
 
 	return
@@ -132,6 +153,10 @@ func (t *template) AbortMultipart(ctx context.Context, path Path, uploadId strin
 		err = t.cos.abortMultipart(ctx, fileKey, uploadId, options)
 	case TypeS3:
 		err = t.s3.abortMultipart(ctx, fileKey, uploadId, options)
+	case TypeObs:
+		err = t.obs.abortMultipart(ctx, fileKey, uploadId, options)
+	default:
+		err = t.cos.abortMultipart(ctx, fileKey, uploadId, options)
 	}
 
 	return
@@ -149,6 +174,10 @@ func (t *template) Delete(ctx context.Context, path Path, opts ...deleteOption) 
 		err = t.cos.delete(ctx, key, options)
 	case TypeS3:
 		err = t.s3.delete(ctx, key, options)
+	case TypeObs:
+		err = t.obs.delete(ctx, key, options)
+	default:
+		err = t.cos.delete(ctx, key, options)
 	}
 
 	return
