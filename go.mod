@@ -3,6 +3,7 @@ module github.com/storezhang/uoa
 go 1.16
 
 require (
+	github.com/aws/aws-sdk-go v1.41.7
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mozillazg/go-httpheader v0.3.0 // indirect
