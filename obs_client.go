@@ -7,12 +7,12 @@ import (
 	`strings`
 )
 
-type ObsClient struct {
+type obsClient struct {
 	conf       *config
 	httpClient *http.Client
 }
 
-func NewObsClient(accessKey, securityKey, endPoint string, configures ...configuror) (client *ObsClient, err error) {
+func NewObsClient(accessKey, securityKey, endPoint string, configures ...configuror) (client *obsClient, err error) {
 	conf := &config{endPoint: endPoint}
 	conf.securityProviders = make([]securityProvider, 0, 3)
 	conf.securityProviders = append(conf.securityProviders, NewBasicSecurityProvider(accessKey, securityKey, ""))
@@ -31,7 +31,7 @@ func NewObsClient(accessKey, securityKey, endPoint string, configures ...configu
 		return
 	}
 
-	client = &ObsClient{
+	client = &obsClient{
 		conf: conf,
 		httpClient: &http.Client{
 			Transport:     conf.transport,
@@ -42,43 +42,43 @@ func NewObsClient(accessKey, securityKey, endPoint string, configures ...configu
 	return
 }
 
-func (o ObsClient) CreateSignedUrl(input *CreateSignedUrlInput) (output *CreateSignedUrlOutput, err error) {
+func (o obsClient) createSignedUrl(input *createSignedUrlInput) (output *createSignedUrlOutput, err error) {
 	if input == nil {
-		return nil, errors.New("CreateSignedUrlInput is nil")
+		return nil, errors.New("createSignedUrlInput is nil")
 	}
 
-	params := make(map[string]string, len(input.QueryParams))
-	for key, value := range input.QueryParams {
+	params := make(map[string]string, len(input.queryParams))
+	for key, value := range input.queryParams {
 		params[key] = value
 	}
 
-	if input.SubResource != "" {
-		params[string(input.SubResource)] = ""
+	if input.subResource != "" {
+		params[string(input.subResource)] = ""
 	}
 
-	headers := make(map[string][]string, len(input.Headers))
-	for key, value := range input.Headers {
+	headers := make(map[string][]string, len(input.headers))
+	for key, value := range input.headers {
 		headers[key] = []string{value}
 	}
 
-	if input.Expires <= 0 {
-		input.Expires = 300
+	if input.expires <= 0 {
+		input.expires = 300
 	}
 
-	requestURL, err := o.doAuthTemporary(string(input.Method), input.Bucket, input.Key, params, headers, int64(input.Expires))
+	requestURL, err := o.doAuthTemporary(string(input.method), input.bucket, input.key, params, headers, int64(input.expires))
 	if err != nil {
 		return nil, err
 	}
 
-	output = &CreateSignedUrlOutput{
-		SignedUrl:                  requestURL,
-		ActualSignedRequestHeaders: headers,
+	output = &createSignedUrlOutput{
+		signedUrl:                  requestURL,
+		actualSignedRequestHeaders: headers,
 	}
 
 	return
 }
 
-func (o ObsClient) getSecurity() securityHolder {
+func (o obsClient) getSecurity() securityHolder {
 	if o.conf.securityProviders != nil {
 		for _, sp := range o.conf.securityProviders {
 			if sp == nil {
@@ -94,16 +94,18 @@ func (o ObsClient) getSecurity() securityHolder {
 	return emptySecurityHolder
 }
 
-func (o ObsClient) Close() {
+func (o obsClient) Close() {
 	o.httpClient = nil
 	o.conf.transport.CloseIdleConnections()
 	o.conf = nil
 }
 
-func (o ObsClient) HeadBucket(bucket string, extensions ...extensionOptions) (resp *http.Response, err error) {
-	var redirectURL string
-	var requestURL string
-	var req *http.Request
+func (o obsClient) headBucket(bucket string, extensions ...extensionOptions) (resp *http.Response, err error) {
+	var (
+		redirectURL string
+		requestURL  string
+		req         *http.Request
+	)
 
 	params := make(map[string]string)
 	headers := make(map[string][]string)
@@ -135,12 +137,14 @@ func (o ObsClient) HeadBucket(bucket string, extensions ...extensionOptions) (re
 	return
 }
 
-func (o ObsClient) HeadObject(input *HeadObjectInput, extensions ...extensionOptions) (output *BaseModel, err error) {
-	var redirectURL string
-	var requestURL string
-	var req *http.Request
-	var resp *http.Response
-	var data interface{}
+func (o obsClient) headObject(input *headObjectInput, extensions ...extensionOptions) (output *baseModel, err error) {
+	var (
+		redirectURL string
+		requestURL  string
+		req         *http.Request
+		resp        *http.Response
+		data        interface{}
+	)
 
 	params := make(map[string]string)
 	headers := make(map[string][]string)
@@ -166,19 +170,19 @@ func (o ObsClient) HeadObject(input *HeadObjectInput, extensions ...extensionOpt
 
 	// 参数校验
 	if input == nil {
-		return nil, errors.New("InitiateMultipartUploadInput is nil")
+		return nil, errors.New("initiateMultipartUploadInput is nil")
 	}
-	if strings.TrimSpace(input.Bucket) == "" && !o.conf.cname {
-		err = errors.New("Bucket is empty")
+	if strings.TrimSpace(input.bucket) == "" && !o.conf.cname {
+		err = errors.New("bucket is empty")
 		return
 	}
-	if strings.TrimSpace(input.Key) == "" {
-		err = errors.New("Key is empty")
+	if strings.TrimSpace(input.key) == "" {
+		err = errors.New("key is empty")
 		return
 	}
 
 	// 构造HttpRequest
-	req, err = o.getRequest(redirectURL, requestURL, false, _data, "POST", input.Bucket, input.Key, params, headers)
+	req, err = o.getRequest(redirectURL, requestURL, false, _data, "POST", input.bucket, input.key, params, headers)
 	if nil == req {
 		return
 	}
@@ -186,7 +190,7 @@ func (o ObsClient) HeadObject(input *HeadObjectInput, extensions ...extensionOpt
 	// 发送POST请求
 	resp, err = o.httpClient.Do(req)
 	// 解析Response到output中
-	err = ParseResponseToBaseModel(resp, output, true, true)
+	err = parseResponseToBaseModel(resp, output, true, true)
 	if nil != err {
 		output = nil
 	}
@@ -194,12 +198,14 @@ func (o ObsClient) HeadObject(input *HeadObjectInput, extensions ...extensionOpt
 	return
 }
 
-func (o ObsClient) InitiateMultipartUpload(input *InitiateMultipartUploadInput, extensions ...extensionOptions) (output *InitiateMultipartUploadOutput, err error) {
-	var redirectURL string
-	var requestURL string
-	var req *http.Request
-	var resp *http.Response
-	var data interface{}
+func (o obsClient) initiateMultipartUpload(input *initiateMultipartUploadInput, extensions ...extensionOptions) (output *initiateMultipartUploadOutput, err error) {
+	var (
+		redirectURL string
+		requestURL  string
+		req         *http.Request
+		resp        *http.Response
+		data        interface{}
+	)
 
 	params := make(map[string]string)
 	headers := make(map[string][]string)
@@ -225,24 +231,24 @@ func (o ObsClient) InitiateMultipartUpload(input *InitiateMultipartUploadInput, 
 
 	// 参数校验
 	if input == nil {
-		return nil, errors.New("InitiateMultipartUploadInput is nil")
+		return nil, errors.New("initiateMultipartUploadInput is nil")
 	}
-	if strings.TrimSpace(input.Bucket) == "" && !o.conf.cname {
-		err = errors.New("Bucket is empty")
+	if strings.TrimSpace(input.bucket) == "" && !o.conf.cname {
+		err = errors.New("bucket is empty")
 		return
 	}
-	if strings.TrimSpace(input.Key) == "" {
-		err = errors.New("Key is empty")
+	if strings.TrimSpace(input.key) == "" {
+		err = errors.New("key is empty")
 		return
 	}
-	if input.ContentType == "" && input.Key != "" {
-		if contentType, ok := mimeTypes[strings.ToLower(input.Key[strings.LastIndex(input.Key, ".")+1:])]; ok {
-			input.ContentType = contentType
+	if input.contentType == "" && input.key != "" {
+		if contentType, ok := mimeTypes[strings.ToLower(input.key[strings.LastIndex(input.key, ".")+1:])]; ok {
+			input.contentType = contentType
 		}
 	}
 
 	// 构造HttpRequest
-	req, err = o.getRequest(redirectURL, requestURL, false, _data, "POST", input.Bucket, input.Key, params, headers)
+	req, err = o.getRequest(redirectURL, requestURL, false, _data, "POST", input.bucket, input.key, params, headers)
 	if nil == req {
 		return
 	}
@@ -250,12 +256,12 @@ func (o ObsClient) InitiateMultipartUpload(input *InitiateMultipartUploadInput, 
 	// 发送POST请求
 	resp, err = o.httpClient.Do(req)
 	// 解析Response到output中
-	err = ParseResponseToBaseModel(resp, output, true, true)
+	err = parseResponseToBaseModel(resp, output, true, true)
 	if nil != err {
 		output = nil
 	}
-	ParseInitiateMultipartUploadOutput(output)
-	if output.EncodingType == "url" {
+	parseInitiateMultipartUploadOutput(output)
+	if output.encodingType == "url" {
 		err = decodeInitiateMultipartUploadOutput(output)
 		if err != nil {
 			output = nil
@@ -265,12 +271,14 @@ func (o ObsClient) InitiateMultipartUpload(input *InitiateMultipartUploadInput, 
 	return
 }
 
-func (o ObsClient) CompleteMultipartUpload(input *CompleteMultipartUploadInput, extensions ...extensionOptions) (output *CompleteMultipartUploadOutput, err error) {
-	var redirectURL string
-	var requestURL string
-	var req *http.Request
-	var resp *http.Response
-	var data interface{}
+func (o obsClient) completeMultipartUpload(input *completeMultipartUploadInput, extensions ...extensionOptions) (output *completeMultipartUploadOutput, err error) {
+	var (
+		redirectURL string
+		requestURL  string
+		req         *http.Request
+		resp        *http.Response
+		data        interface{}
+	)
 
 	params := make(map[string]string)
 	headers := make(map[string][]string)
@@ -288,21 +296,21 @@ func (o ObsClient) CompleteMultipartUpload(input *CompleteMultipartUploadInput, 
 
 	// 参数校验
 	if input == nil {
-		return nil, errors.New("CompleteMultipartUploadInput is nil")
+		return nil, errors.New("completeMultipartUploadInput is nil")
 	}
-	if input.UploadId == "" {
-		return nil, errors.New("UploadId is empty")
+	if input.uploadId == "" {
+		return nil, errors.New("uploadId is empty")
 	}
-	if strings.TrimSpace(input.Bucket) == "" && !o.conf.cname {
-		err = errors.New("Bucket is empty")
+	if strings.TrimSpace(input.bucket) == "" && !o.conf.cname {
+		err = errors.New("bucket is empty")
 		return
 	}
-	if strings.TrimSpace(input.Key) == "" {
-		err = errors.New("Key is empty")
+	if strings.TrimSpace(input.key) == "" {
+		err = errors.New("key is empty")
 		return
 	}
 
-	var parts partSlice = input.Parts
+	var parts partSlice = input.parts
 	sort.Sort(parts)
 	//准备参数、请求头、数据
 	params, headers, data, err = input.trans(true)
@@ -314,18 +322,18 @@ func (o ObsClient) CompleteMultipartUpload(input *CompleteMultipartUploadInput, 
 	}
 
 	// 构造HttpRequest
-	req, err = o.getRequest(redirectURL, requestURL, false, _data, "POST", input.Bucket, input.Key, params, headers)
+	req, err = o.getRequest(redirectURL, requestURL, false, _data, "POST", input.bucket, input.key, params, headers)
 
 	// 发送POST请求
 	resp, err = o.httpClient.Do(req)
 	// 解析Response到output中
-	err = ParseResponseToBaseModel(resp, output, true, true)
+	err = parseResponseToBaseModel(resp, output, true, true)
 	if nil != err {
 		output = nil
 		return
 	}
-	ParseCompleteMultipartUploadOutput(output)
-	if output.EncodingType == "url" {
+	parseCompleteMultipartUploadOutput(output)
+	if output.encodingType == "url" {
 		err = decodeCompleteMultipartUploadOutput(output)
 		if err != nil {
 			output = nil
@@ -335,12 +343,14 @@ func (o ObsClient) CompleteMultipartUpload(input *CompleteMultipartUploadInput, 
 	return
 }
 
-func (o ObsClient) AbortMultipartUpload(input *AbortMultipartUploadInput, extensions ...extensionOptions) (output *BaseModel, err error) {
-	var redirectURL string
-	var requestURL string
-	var req *http.Request
-	var resp *http.Response
-	var data interface{}
+func (o obsClient) abortMultipartUpload(input *abortMultipartUploadInput, extensions ...extensionOptions) (output *baseModel, err error) {
+	var (
+		redirectURL string
+		requestURL  string
+		req         *http.Request
+		resp        *http.Response
+		data        interface{}
+	)
 
 	params := make(map[string]string)
 	headers := make(map[string][]string)
@@ -357,17 +367,17 @@ func (o ObsClient) AbortMultipartUpload(input *AbortMultipartUploadInput, extens
 	}
 	// 参数校验
 	if input == nil {
-		return nil, errors.New("AbortMultipartUploadInput is nil")
+		return nil, errors.New("abortMultipartUploadInput is nil")
 	}
-	if input.UploadId == "" {
-		return nil, errors.New("UploadId is empty")
+	if input.uploadId == "" {
+		return nil, errors.New("uploadId is empty")
 	}
-	if strings.TrimSpace(input.Bucket) == "" && !o.conf.cname {
-		err = errors.New("Bucket is empty")
+	if strings.TrimSpace(input.bucket) == "" && !o.conf.cname {
+		err = errors.New("bucket is empty")
 		return
 	}
-	if strings.TrimSpace(input.Key) == "" {
-		err = errors.New("Key is empty")
+	if strings.TrimSpace(input.key) == "" {
+		err = errors.New("key is empty")
 		return
 	}
 
@@ -380,22 +390,24 @@ func (o ObsClient) AbortMultipartUpload(input *AbortMultipartUploadInput, extens
 		return nil, _err
 	}
 
-	req, err = o.getRequest(redirectURL, requestURL, false, _data, "DELETE", input.Bucket, input.Key, params, headers)
+	req, err = o.getRequest(redirectURL, requestURL, false, _data, "DELETE", input.bucket, input.key, params, headers)
 
 	// 发送POST请求
 	resp, err = o.httpClient.Do(req)
 	// 解析Response到output中
-	err = ParseResponseToBaseModel(resp, output, true, true)
+	err = parseResponseToBaseModel(resp, output, true, true)
 
 	return
 }
 
-func (o ObsClient) DeleteObject(input *DeleteObjectInput, extensions ...extensionOptions) (output *DeleteObjectOutput, err error) {
-	var redirectURL string
-	var requestURL string
-	var req *http.Request
-	var resp *http.Response
-	var data interface{}
+func (o obsClient) deleteObject(input *deleteObjectInput, extensions ...extensionOptions) (output *deleteObjectOutput, err error) {
+	var (
+		redirectURL string
+		requestURL  string
+		req         *http.Request
+		resp        *http.Response
+		data        interface{}
+	)
 
 	params := make(map[string]string)
 	headers := make(map[string][]string)
@@ -412,14 +424,14 @@ func (o ObsClient) DeleteObject(input *DeleteObjectInput, extensions ...extensio
 	}
 	// 参数校验
 	if input == nil {
-		return nil, errors.New("AbortMultipartUploadInput is nil")
+		return nil, errors.New("abortMultipartUploadInput is nil")
 	}
-	if strings.TrimSpace(input.Bucket) == "" && !o.conf.cname {
-		err = errors.New("Bucket is empty")
+	if strings.TrimSpace(input.bucket) == "" && !o.conf.cname {
+		err = errors.New("bucket is empty")
 		return
 	}
-	if strings.TrimSpace(input.Key) == "" {
-		err = errors.New("Key is empty")
+	if strings.TrimSpace(input.key) == "" {
+		err = errors.New("key is empty")
 		return
 	}
 
@@ -432,17 +444,17 @@ func (o ObsClient) DeleteObject(input *DeleteObjectInput, extensions ...extensio
 		return nil, _err
 	}
 
-	req, err = o.getRequest(redirectURL, requestURL, false, _data, "DELETE", input.Bucket, input.Key, params, headers)
+	req, err = o.getRequest(redirectURL, requestURL, false, _data, "DELETE", input.bucket, input.key, params, headers)
 
 	// 发送POST请求
 	resp, err = o.httpClient.Do(req)
 	// 解析Response到output中
-	err = ParseResponseToBaseModel(resp, output, true, true)
+	err = parseResponseToBaseModel(resp, output, true, true)
 	if nil != err {
 		output = nil
 		return
 	}
-	ParseDeleteObjectOutput(output)
+	parseDeleteObjectOutput(output)
 
 	return
 }

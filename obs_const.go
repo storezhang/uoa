@@ -98,7 +98,7 @@ const (
 	PARAM_CREDENTIAL_AMZ_CAMEL    = "X-Amz-Credential"
 	PARAM_DATE_AMZ_CAMEL          = "X-Amz-Date"
 	PARAM_DATE_OBS_CAMEL          = "X-Obs-Date"
-	PARAM_EXPIRES_AMZ_CAMEL       = "X-Amz-Expires"
+	PARAM_EXPIRES_AMZ_CAMEL       = "X-Amz-expires"
 	PARAM_SIGNEDHEADERS_AMZ_CAMEL = "X-Amz-SignedHeaders"
 	PARAM_SIGNATURE_AMZ_CAMEL     = "X-Amz-Signature"
 

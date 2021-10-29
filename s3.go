@@ -2,8 +2,8 @@ package uoa
 
 import (
 	`context`
-	`fmt`
 	`net/url`
+	`strings`
 	`sync`
 	`time`
 
@@ -15,24 +15,11 @@ import (
 
 type _s3 struct {
 	clientCache    sync.Map
-	paramCiProcess string
-	paramPm3u8     string
-	paramExpires   string
-
-	expiresMin float64
-	expiresMax float64
 }
 
 func newS3() *_s3 {
 	return &_s3{
 		clientCache: sync.Map{},
-
-		paramCiProcess: `ci-process`,
-		paramPm3u8:     `pm3u8`,
-		paramExpires:   `expires`,
-
-		expiresMin: 3600,
-		expiresMax: 43200,
 	}
 }
 
@@ -46,13 +33,14 @@ func newS3Client(options *options) (s *s3.S3, err error) {
 	return
 }
 
-func (a *_s3) exist(ctx context.Context, bucket string, key string, options *options) (exist bool, err error) {
+func (a *_s3) exist(ctx context.Context, key string, options *options) (exist bool, err error) {
 	var client *s3.S3
 	client, err = newS3Client(options)
 	if nil != err {
 		return
 	}
 
+	_, _, bucket := a.parseRegionAndBucket(options.endpoint)
 	if headRsp, headErr := client.HeadObjectWithContext(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -86,13 +74,14 @@ func (a *_s3) credentials(ctx context.Context, options *credentialsOptions, keys
 	return
 }
 
-func (a *_s3) url(ctx context.Context, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
+func (a *_s3) url(ctx context.Context, key string, options *urlOptions) (url *url.URL, err error) {
 	var client *s3.S3
 	client, err = newS3Client(options.options)
 	if nil != err {
 		return
 	}
 
+	_, _, bucket := a.parseRegionAndBucket(options.endpoint)
 	switch options.streamType {
 	case streamTypeUpstream:
 		url, err = a.uploadUrl(ctx, client, bucket, key, options)
@@ -112,9 +101,10 @@ func (a *_s3) initiateMultipart(ctx context.Context, key string, options *multip
 		return
 	}
 
+	_, _, bucket := a.parseRegionAndBucket(options.endpoint)
 	var res *s3.CreateMultipartUploadOutput
 	if res, err = client.CreateMultipartUploadWithContext(ctx, &s3.CreateMultipartUploadInput{
-		Bucket: aws.String(options.bucket),
+		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}); err != nil {
 		return
@@ -143,10 +133,11 @@ func (a *_s3) completeMultipart(ctx context.Context, key string, uploadId string
 	partsUpload := &s3.CompletedMultipartUpload{
 		Parts: parts,
 	}
+	_, _, bucket := a.parseRegionAndBucket(options.endpoint)
 	_, err = client.CompleteMultipartUploadWithContext(ctx, &s3.CompleteMultipartUploadInput{
 		Key:             aws.String(key),
 		UploadId:        aws.String(uploadId),
-		Bucket:          aws.String(options.bucket),
+		Bucket:          aws.String(bucket),
 		MultipartUpload: partsUpload,
 	})
 
@@ -160,8 +151,9 @@ func (a *_s3) abortMultipart(ctx context.Context, key string, uploadId string, o
 		return
 	}
 
+	_, _, bucket := a.parseRegionAndBucket(options.endpoint)
 	_, err = client.AbortMultipartUploadWithContext(ctx, &s3.AbortMultipartUploadInput{
-		Bucket:   aws.String(options.bucket),
+		Bucket:   aws.String(bucket),
 		Key:      aws.String(key),
 		UploadId: aws.String(uploadId),
 	})
@@ -175,8 +167,9 @@ func (a *_s3) delete(ctx context.Context, key string, options *deleteOptions) (e
 	if nil != err {
 		return
 	}
+	_, _, bucket := a.parseRegionAndBucket(options.endpoint)
 	_, err = client.DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(options.bucket),
+		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
 
@@ -205,7 +198,7 @@ func (a *_s3) uploadUrl(ctx context.Context, client *s3.S3, bucket string, key s
 func (a *_s3) downloadUrl(ctx context.Context, client *s3.S3, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
 	// 检查文件是否存在，文件不存在没必要往下继续执行
 	var exist bool
-	exist, err = a.exist(ctx, bucket, key, options.options)
+	exist, err = a.exist(ctx, key, options.options)
 	if !exist || nil != err {
 		return
 	}
@@ -225,26 +218,15 @@ func (a *_s3) downloadUrl(ctx context.Context, client *s3.S3, bucket string, key
 	}
 	url, err = url.Parse(urlStr)
 
-	// 解析私有M3u8存储文件
-	if !options.pm3u8 {
-		return
-	}
-
-	query := url.Query()
-	query.Add(a.paramCiProcess, a.paramPm3u8)
-	query.Add(a.paramExpires, a.expires(options.options))
-
 	return
 }
 
-func (a *_s3) expires(options *options) string {
-	expires := options.expired.Seconds()
-	if expires < a.expiresMin {
-		expires = a.expiresMin
-	}
-	if expires > a.expiresMax {
-		expires = a.expiresMax
-	}
+func (a *_s3) parseRegionAndBucket(endpoint string) (region string, appId string, bucketName string) {
+	endpoint = strings.ReplaceAll(endpoint, `https://`, ``)
+	urls := strings.Split(endpoint, `.`)
+	region = urls[2]
+	bucketName = urls[0]
+	appId = strings.Split(urls[0], `-`)[1]
 
-	return fmt.Sprintf(`%f`, expires)
+	return
 }

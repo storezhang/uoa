@@ -45,10 +45,10 @@ func prepareData(headers map[string][]string, data interface{}) (io.Reader, erro
 	var _data io.Reader
 	if data != nil {
 		if dataStr, ok := data.(string); ok {
-			headers["Content-Length"] = []string{IntToString(len(dataStr))}
+			headers["Content-Length"] = []string{intToString(len(dataStr))}
 			_data = strings.NewReader(dataStr)
 		} else if dataByte, ok := data.([]byte); ok {
-			headers["Content-Length"] = []string{IntToString(len(dataByte))}
+			headers["Content-Length"] = []string{intToString(len(dataByte))}
 			_data = bytes.NewReader(dataByte)
 		} else if dataReader, ok := data.(io.Reader); ok {
 			_data = dataReader
@@ -61,7 +61,7 @@ func prepareData(headers map[string][]string, data interface{}) (io.Reader, erro
 }
 
 // 获取HTTP请求的 Request
-func (o ObsClient) getRequest(redirectURL, requestURL string, redirectFlag bool, _data io.Reader, method,
+func (o obsClient) getRequest(redirectURL, requestURL string, redirectFlag bool, _data io.Reader, method,
 	bucketName, objectKey string, params map[string]string, headers map[string][]string) (*http.Request, error) {
 	if redirectURL != "" {
 		if !redirectFlag {

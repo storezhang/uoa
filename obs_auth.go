@@ -11,7 +11,7 @@ import (
 
 func v2Auth(ak, sk, method, canonicalizedURL string, headers map[string][]string, isObs bool) map[string]string {
 	stringToSign := getV2StringToSign(method, canonicalizedURL, headers, isObs)
-	return map[string]string{"Signature": Base64Encode(HmacSha1([]byte(sk), []byte(stringToSign)))}
+	return map[string]string{"Signature": base64Encode(hmacSha1([]byte(sk), []byte(stringToSign)))}
 }
 
 func getV2StringToSign(method, canonicalizeURL string, headers map[string][]string, isObs bool) string {
@@ -136,8 +136,10 @@ func getStringToSign(keys []string, isObs bool, _headers map[string][]string) []
 }
 
 // 鉴权，并返回鉴权后的URL地址
-func (o ObsClient) doAuth(method, bucketName, objectKey string, params map[string]string,
+func (o obsClient) doAuth(method, bucketName, objectKey string, params map[string]string,
 	headers map[string][]string, hostName string) (requestURL string, err error) {
+	var canonicalizeURL string
+
 	sh := o.getSecurity()
 	isAkSkEmpty := sh.accessKey == "" || sh.securityKey == ""
 	if isAkSkEmpty == false && sh.securityToken != "" {
@@ -147,8 +149,9 @@ func (o ObsClient) doAuth(method, bucketName, objectKey string, params map[strin
 			headers[HEADER_STS_TOKEN_AMZ] = []string{sh.securityToken}
 		}
 	}
+
 	isObs := o.conf.signature == SignatureObs
-	requestURL, canonicalizeURL := o.conf.formatUrls(bucketName, objectKey, params, true)
+	requestURL, canonicalizeURL = o.conf.formatUrls(bucketName, objectKey, params, true)
 	parsedRequestURL, err := url.Parse(requestURL)
 	if err != nil {
 		return "", err
@@ -188,10 +191,13 @@ func (o ObsClient) doAuth(method, bucketName, objectKey string, params map[strin
 }
 
 // 创建临时鉴权，并返回鉴权后的URL地址
-func (o ObsClient) doAuthTemporary(method, bucketName, objectKey string, params map[string]string,
+func (o obsClient) doAuthTemporary(method, bucketName, objectKey string, params map[string]string,
 	headers map[string][]string, expires int64) (requestURL string, err error) {
-	var canonicalizeURL string
-	var parsedRequestURL *url.URL
+	var (
+		canonicalizeURL  string
+		parsedRequestURL *url.URL
+	)
+
 	sh := o.getSecurity()
 	isAkSkEmpty := sh.accessKey == "" || sh.securityKey == ""
 	if isAkSkEmpty == false && sh.securityToken != "" {
@@ -240,7 +246,7 @@ func (o ObsClient) doAuthTemporary(method, bucketName, objectKey string, params 
 			params[PARAM_ALGORITHM_AMZ_CAMEL] = V4_HASH_PREFIX
 			params[PARAM_CREDENTIAL_AMZ_CAMEL] = credential
 			params[PARAM_DATE_AMZ_CAMEL] = longDate
-			params[PARAM_EXPIRES_AMZ_CAMEL] = Int64ToString(expires)
+			params[PARAM_EXPIRES_AMZ_CAMEL] = int64ToString(expires)
 			params[PARAM_SIGNEDHEADERS_AMZ_CAMEL] = strings.Join(signedHeaders, ";")
 
 			requestURL, canonicalizeURL = o.conf.formatUrls(bucketName, objectKey, params, true)
@@ -252,7 +258,7 @@ func (o ObsClient) doAuthTemporary(method, bucketName, objectKey string, params 
 			stringToSign := getV4StringToSign(method, canonicalizeURL, parsedRequestURL.RawQuery, scope, longDate, UNSIGNED_PAYLOAD, signedHeaders, _headers)
 			signature := getSignature(stringToSign, sh.securityKey, o.conf.region, shortDate)
 
-			requestURL += fmt.Sprintf("&%s=%s", PARAM_SIGNATURE_AMZ_CAMEL, UrlEncode(signature, false))
+			requestURL += fmt.Sprintf("&%s=%s", PARAM_SIGNATURE_AMZ_CAMEL, urlEncode(signature, false))
 
 		} else {
 			originDate := headers[HEADER_DATE_CAMEL][0]
@@ -261,10 +267,10 @@ func (o ObsClient) doAuthTemporary(method, bucketName, objectKey string, params 
 				return "", parseDateErr
 			}
 			expires += date.Unix()
-			headers[HEADER_DATE_CAMEL] = []string{Int64ToString(expires)}
+			headers[HEADER_DATE_CAMEL] = []string{int64ToString(expires)}
 
 			stringToSign := getV2StringToSign(method, canonicalizeURL, headers, o.conf.signature == SignatureObs)
-			signature := UrlEncode(Base64Encode(HmacSha1([]byte(sh.securityKey), []byte(stringToSign))), false)
+			signature := urlEncode(base64Encode(hmacSha1([]byte(sh.securityKey), []byte(stringToSign))), false)
 			if strings.Index(requestURL, "?") < 0 {
 				requestURL += "?"
 			} else {
@@ -275,18 +281,18 @@ func (o ObsClient) doAuthTemporary(method, bucketName, objectKey string, params 
 			if o.conf.signature != SignatureObs {
 				requestURL += "AWS"
 			}
-			requestURL += fmt.Sprintf("AccessKeyId=%s&Expires=%d&Signature=%s", UrlEncode(sh.accessKey, false), expires, signature)
+			requestURL += fmt.Sprintf("AccessKeyId=%s&expires=%d&Signature=%s", urlEncode(sh.accessKey, false), expires, signature)
 		}
 	}
 
 	return
 }
 
-// 对 Headers 进程转码
+// 对 headers 进程转码
 func encodeHeaders(headers map[string][]string) {
 	for key, values := range headers {
 		for index, value := range values {
-			values[index] = UrlEncode(value, true)
+			values[index] = urlEncode(value, true)
 		}
 		headers[key] = values
 	}
@@ -299,7 +305,7 @@ func prepareHostAndDate(headers map[string][]string, hostName string, isV4 bool)
 		if len(date) == 1 {
 			if isV4 {
 				if t, err := time.Parse(LONG_DATE_FORMAT, date[0]); err == nil {
-					headers[HEADER_DATE_CAMEL] = []string{FormatUtcToRfc1123(t)}
+					headers[HEADER_DATE_CAMEL] = []string{formatUtcToRfc1123(t)}
 					flag = true
 				}
 			} else {
@@ -314,11 +320,11 @@ func prepareHostAndDate(headers map[string][]string, hostName string, isV4 bool)
 		}
 	}
 	if _, ok := headers[HEADER_DATE_CAMEL]; !ok {
-		headers[HEADER_DATE_CAMEL] = []string{FormatUtcToRfc1123(time.Now().UTC())}
+		headers[HEADER_DATE_CAMEL] = []string{formatUtcToRfc1123(time.Now().UTC())}
 	}
 }
 
-// 获取签名后的 Headers
+// 获取签名后的 headers
 func getSignedHeaders(headers map[string][]string) ([]string, map[string][]string) {
 	length := len(headers)
 	_headers := make(map[string][]string, length)
@@ -401,7 +407,7 @@ func getV4StringToSign(method, canonicalizeURL, queryURL, scope, longDate, paylo
 	stringToSign = append(stringToSign, "\n")
 	stringToSign = append(stringToSign, scope)
 	stringToSign = append(stringToSign, "\n")
-	stringToSign = append(stringToSign, HexSha256([]byte(_canonicalRequest)))
+	stringToSign = append(stringToSign, hexSha256([]byte(_canonicalRequest)))
 
 	_stringToSign := strings.Join(stringToSign, "")
 
@@ -409,12 +415,12 @@ func getV4StringToSign(method, canonicalizeURL, queryURL, scope, longDate, paylo
 }
 
 func getSignature(stringToSign, sk, region, shortDate string) string {
-	key := HmacSha256([]byte(V4_HASH_PRE+sk), []byte(shortDate))
-	key = HmacSha256(key, []byte(region))
-	key = HmacSha256(key, []byte(V4_SERVICE_NAME))
-	key = HmacSha256(key, []byte(V4_SERVICE_SUFFIX))
+	key := hmacSha256([]byte(V4_HASH_PRE+sk), []byte(shortDate))
+	key = hmacSha256(key, []byte(region))
+	key = hmacSha256(key, []byte(V4_SERVICE_NAME))
+	key = hmacSha256(key, []byte(V4_SERVICE_SUFFIX))
 
-	return Hex(HmacSha256(key, []byte(stringToSign)))
+	return Hex(hmacSha256(key, []byte(stringToSign)))
 }
 
 // V4鉴权

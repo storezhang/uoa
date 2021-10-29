@@ -3,52 +3,45 @@ package uoa
 import (
 	`context`
 	`net/url`
+	`strings`
 	`sync`
 )
 
-type _obs struct {
-	clientCache    sync.Map
-	paramCiProcess string
-	paramPm3u8     string
-	paramExpires   string
-
-	expiresMin float64
-	expiresMax float64
+type obs struct {
+	clientCache sync.Map
 }
 
-func newObs() *_obs {
-	return &_obs{
+func newObs() *obs {
+	return &obs{
 		clientCache: sync.Map{},
-
-		paramCiProcess: `ci-process`,
-		paramPm3u8:     `pm3u8`,
-		paramExpires:   `expires`,
-
-		expiresMin: 3600,
-		expiresMax: 43200,
 	}
 }
 
-func newObsClient(accessKey, securityKey, endPoint string) (*ObsClient, error) {
+func newObsClient(accessKey, securityKey, endPoint string) (*obsClient, error) {
 	return NewObsClient(accessKey, securityKey, endPoint)
 }
 
-func (_ *_obs) exist(ctx context.Context, bucket string, key string, options *options) (exist bool, err error) {
-	var client *ObsClient
-	var output *BaseModel
+func (o *obs) exist(ctx context.Context, key string, options *options) (exist bool, err error) {
+	var (
+		client *obsClient
+		output *baseModel
+	)
+
 	client, err = newObsClient(options.secret.Id, options.secret.Key, options.endpoint)
 	if nil != err {
 		return
 	}
-	output, err = client.HeadObject(&HeadObjectInput{
-		Bucket: bucket,
-		Key:    key,
+
+	_, _, bucket := o.parseRegionAndBucketName(options.endpoint)
+	output, err = client.headObject(&headObjectInput{
+		bucket: bucket,
+		key:    key,
 	})
 	if nil != err || output == nil {
 		exist = false
 		return
 	}
-	if output.StatusCode != 200 {
+	if output.statusCode != 200 {
 		exist = false
 	} else {
 		exist = true
@@ -57,8 +50,8 @@ func (_ *_obs) exist(ctx context.Context, bucket string, key string, options *op
 	return
 }
 
-func (_ *_obs) credentials(ctx context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error) {
-	var client *ObsClient
+func (o *obs) credentials(ctx context.Context, options *credentialsOptions, keys ...string) (credentials *credentialsBase, err error) {
+	var client *obsClient
 
 	client, err = newObsClient(options.secret.Id, options.secret.Key, options.endpoint)
 	if nil != err {
@@ -75,9 +68,11 @@ func (_ *_obs) credentials(ctx context.Context, options *credentialsOptions, key
 	return
 }
 
-func (_ *_obs) url(ctx context.Context, bucket string, key string, options *urlOptions) (url *url.URL, err error) {
-	var client *ObsClient
-	var method HttpMethodType
+func (o *obs) url(ctx context.Context, key string, options *urlOptions) (url *url.URL, err error) {
+	var (
+		client *obsClient
+		method HttpMethodType
+	)
 
 	client, err = newObsClient(options.secret.Id, options.secret.Key, options.endpoint)
 	if nil != err {
@@ -93,17 +88,18 @@ func (_ *_obs) url(ctx context.Context, bucket string, key string, options *urlO
 		method = HttpMethodGet
 	}
 
-	output, _err := client.CreateSignedUrl(&CreateSignedUrlInput{
-		Method:  method,
-		Bucket:  bucket,
-		Key:     key,
-		Expires: 0,
+	_, _, bucket := o.parseRegionAndBucketName(options.endpoint)
+	output, _err := client.createSignedUrl(&createSignedUrlInput{
+		method:  method,
+		bucket:  bucket,
+		key:     key,
+		expires: 0,
 	})
 	if nil != _err {
 		err = _err
 		return
 	}
-	urlStr := output.SignedUrl
+	urlStr := output.signedUrl
 	if "" == urlStr {
 		return
 	}
@@ -112,90 +108,106 @@ func (_ *_obs) url(ctx context.Context, bucket string, key string, options *urlO
 	return
 }
 
-func (_ *_obs) initiateMultipart(ctx context.Context, key string, options *multipartOptions) (uploadId string, err error) {
-	var client *ObsClient
-	var output *InitiateMultipartUploadOutput
+func (o *obs) initiateMultipart(ctx context.Context, key string, options *multipartOptions) (uploadId string, err error) {
+	var (
+		client *obsClient
+		output *initiateMultipartUploadOutput
+	)
 
 	client, err = newObsClient(options.secret.Id, options.secret.Key, options.endpoint)
 	if nil != err {
 		return
 	}
 
-	objectOperationInput := &ObjectOperationInput{
-		Bucket: options.bucket,
-		Key:    key,
+	_, _, bucket := o.parseRegionAndBucketName(options.endpoint)
+	objectOperationInput := &objectOperationInput{
+		bucket: bucket,
+		key:    key,
 	}
-	output, err = client.InitiateMultipartUpload(&InitiateMultipartUploadInput{
-		ObjectOperationInput: *objectOperationInput,
+	output, err = client.initiateMultipartUpload(&initiateMultipartUploadInput{
+		objectOperationInput: *objectOperationInput,
 	})
 
 	if err != nil {
 		return
 	}
-	uploadId = output.UploadId
+	uploadId = output.uploadId
 
 	return
 }
 
-func (_ *_obs) completeMultipart(ctx context.Context, key string, uploadId string, objects []Object, options *multipartOptions) (err error) {
-	var client *ObsClient
+func (o *obs) completeMultipart(ctx context.Context, key string, uploadId string, objects []Object, options *multipartOptions) (err error) {
+	var client *obsClient
 
 	client, err = newObsClient(options.secret.Id, options.secret.Key, options.endpoint)
 	if nil != err {
 		return
 	}
 
-	parts := make([]Part, 0, len(objects))
+	parts := make([]part, 0, len(objects))
 	for _, object := range objects {
-		parts = append(parts, Part{
-			ETag:       object.etag,
-			PartNumber: int(object.size),
-			Size:       object.size,
+		parts = append(parts, part{
+			eTag:       object.etag,
+			partNumber: int(object.size),
+			size:       object.size,
 		})
 	}
 
-	input := &CompleteMultipartUploadInput{
-		Bucket:   options.bucket,
-		Key:      key,
-		UploadId: uploadId,
-		Parts:    parts,
+	_, _, bucket := o.parseRegionAndBucketName(options.endpoint)
+	input := &completeMultipartUploadInput{
+		bucket:   bucket,
+		key:      key,
+		uploadId: uploadId,
+		parts:    parts,
 	}
-	_, err = client.CompleteMultipartUpload(input)
+	_, err = client.completeMultipartUpload(input)
 
 	return
 }
 
-func (_ *_obs) abortMultipart(ctx context.Context, key string, uploadId string, options *multipartOptions) (err error) {
-	var client *ObsClient
+func (o *obs) abortMultipart(ctx context.Context, key string, uploadId string, options *multipartOptions) (err error) {
+	var client *obsClient
 
 	client, err = newObsClient(options.secret.Id, options.secret.Key, options.endpoint)
 	if nil != err {
 		return
 	}
 
-	input := &AbortMultipartUploadInput{
-		Bucket:   options.bucket,
-		Key:      key,
-		UploadId: uploadId,
+	_, _, bucket := o.parseRegionAndBucketName(options.endpoint)
+	input := &abortMultipartUploadInput{
+		bucket:   bucket,
+		key:      key,
+		uploadId: uploadId,
 	}
-	_, err = client.AbortMultipartUpload(input)
+	_, err = client.abortMultipartUpload(input)
 
 	return
 }
 
-func (_ *_obs) delete(ctx context.Context, key string, options *deleteOptions) (err error) {
-	var client *ObsClient
+func (o *obs) delete(ctx context.Context, key string, options *deleteOptions) (err error) {
+	var client *obsClient
 
 	client, err = newObsClient(options.secret.Id, options.secret.Key, options.endpoint)
 	if nil != err {
 		return
 	}
 
-	input := &DeleteObjectInput{
-		Bucket: options.bucket,
-		Key:    key,
+	_, _, bucket := o.parseRegionAndBucketName(options.endpoint)
+	input := &deleteObjectInput{
+		bucket: bucket,
+		key:    key,
 	}
-	_, err = client.DeleteObject(input)
+	_, err = client.deleteObject(input)
+
+	return
+}
+
+func (o *obs) parseRegionAndBucketName(endpoint string) (region string, appId string, bucketName string) {
+	endpoint = strings.ReplaceAll(endpoint, `https://`, ``)
+	urls := strings.Split(endpoint, `.`)
+	region = urls[2]
+	bucketName = urls[0]
+	appId = strings.Split(urls[0], `-`)[1]
 
 	return
 }

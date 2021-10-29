@@ -10,9 +10,6 @@ type (
 
 		// 版本
 		version string
-
-		// 桶名称，非必填参数，针对S3需传入
-		bucket string
 	}
 )
 

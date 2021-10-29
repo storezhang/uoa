@@ -20,11 +20,11 @@ var ipRegex = regexp.MustCompile("^((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-
 var v4AuthRegex = regexp.MustCompile("Credential=(.+?),SignedHeaders=(.+?),Signature=.+")
 var regionRegex = regexp.MustCompile(".+/\\d+/(.+?)/.+")
 
-func StringContains(src string, subStr string, subTranscoding string) string {
+func stringContains(src string, subStr string, subTranscoding string) string {
 	return strings.Replace(src, subStr, subTranscoding, -1)
 }
 
-func StringToInt(value string, def int) int {
+func stringToInt(value string, def int) int {
 	ret, err := strconv.Atoi(value)
 	if err != nil {
 		ret = def
@@ -33,7 +33,7 @@ func StringToInt(value string, def int) int {
 	return ret
 }
 
-func StringToInt64(value string, def int64) int64 {
+func stringToInt64(value string, def int64) int64 {
 	ret, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		ret = def
@@ -42,19 +42,19 @@ func StringToInt64(value string, def int64) int64 {
 	return ret
 }
 
-func IntToString(value int) string {
+func intToString(value int) string {
 	return strconv.Itoa(value)
 }
 
-func Int64ToString(value int64) string {
+func int64ToString(value int64) string {
 	return strconv.FormatInt(value, 10)
 }
 
-func GetCurrentTimestamp() int64 {
+func getCurrentTimestamp() int64 {
 	return time.Now().UnixNano() / 1000000
 }
 
-func FormatUtcNow(format string) string {
+func formatUtcNow(format string) string {
 	return time.Now().UTC().Format(format)
 }
 
@@ -68,7 +68,7 @@ func Md5(value []byte) ([]byte, error) {
 	return m.Sum(nil), nil
 }
 
-func HmacSha1(key, value []byte) []byte {
+func hmacSha1(key, value []byte) []byte {
 	mac := hmac.New(sha1.New, key)
 	_, err := mac.Write(value)
 	if err != nil {
@@ -78,7 +78,7 @@ func HmacSha1(key, value []byte) []byte {
 	return mac.Sum(nil)
 }
 
-func HmacSha256(key, value []byte) []byte {
+func hmacSha256(key, value []byte) []byte {
 	mac := hmac.New(sha256.New, key)
 	_, err := mac.Write(value)
 	if err != nil {
@@ -88,24 +88,24 @@ func HmacSha256(key, value []byte) []byte {
 	return mac.Sum(nil)
 }
 
-func Base64Encode(value []byte) string {
+func base64Encode(value []byte) string {
 	return base64.StdEncoding.EncodeToString(value)
 }
 
-func Base64Decode(value string) ([]byte, error) {
+func base64Decode(value string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(value)
 }
 
-func HexMd5(value []byte) string {
+func hexMd5(value []byte) string {
 	bytes, _ := Md5(value)
 
 	return Hex(bytes)
 }
 
-func Base64Md5(value []byte) string {
+func base64Md5(value []byte) string {
 	bytes, _ := Md5(value)
 
-	return Base64Encode(bytes)
+	return base64Encode(bytes)
 }
 
 func parseJSON(value []byte, result interface{}) error {
@@ -120,11 +120,11 @@ func Hex(value []byte) string {
 	return hex.EncodeToString(value)
 }
 
-func HexSha256(value []byte) string {
-	return Hex(Sha256Hash(value))
+func hexSha256(value []byte) string {
+	return Hex(sha256Hash(value))
 }
 
-func Sha256Hash(value []byte) []byte {
+func sha256Hash(value []byte) []byte {
 	hash := sha256.New()
 	_, err := hash.Write(value)
 	if err != nil {
@@ -134,7 +134,7 @@ func Sha256Hash(value []byte) []byte {
 	return hash.Sum(nil)
 }
 
-func IsIP(value string) bool {
+func isIP(value string) bool {
 	return ipRegex.MatchString(value)
 }
 
@@ -147,13 +147,13 @@ func isPathStyle(headers map[string][]string, bucketName string) bool {
 }
 
 // 将时间字符串格式转换成 RFC1123 格式
-func FormatUtcToRfc1123(t time.Time) string {
+func formatUtcToRfc1123(t time.Time) string {
 	ret := t.UTC().Format(time.RFC1123)
 	return ret[:strings.LastIndex(ret, "UTC")] + "GMT"
 }
 
 // URL转码，将中文字符转换为国际码
-func UrlEncode(value string, chineseOnly bool) string {
+func urlEncode(value string, chineseOnly bool) string {
 	if chineseOnly {
 		values := make([]string, 0, len(value))
 		for _, val := range value {

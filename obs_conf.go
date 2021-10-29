@@ -270,7 +270,7 @@ func (conf *config) initConfigWithDefault() error {
 		}
 	}
 
-	if IsIP(urlHolder.host) {
+	if isIP(urlHolder.host) {
 		conf.pathStyle = true
 	}
 

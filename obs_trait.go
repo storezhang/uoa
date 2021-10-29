@@ -2,14 +2,14 @@ package uoa
 
 import `strings`
 
-func (input ObjectOperationInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
+func (input objectOperationInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
 	headers = make(map[string][]string)
 	params = make(map[string]string)
-	if acl := string(input.ACL); acl != "" {
+	if acl := string(input.acl); acl != "" {
 		setHeaders(headers, HEADER_ACL, []string{acl}, isObs)
 	}
 	input.prepareGrantHeaders(headers)
-	if storageClass := string(input.StorageClass); storageClass != "" {
+	if storageClass := string(input.storageClass); storageClass != "" {
 		if !isObs {
 			if storageClass == string(StorageClassWarm) {
 				storageClass = string(storageClassStandardIA)
@@ -19,16 +19,16 @@ func (input ObjectOperationInput) trans(isObs bool) (params map[string]string, h
 		}
 		setHeaders(headers, HEADER_STORAGE_CLASS2, []string{storageClass}, isObs)
 	}
-	if input.WebsiteRedirectLocation != "" {
-		setHeaders(headers, HEADER_WEBSITE_REDIRECT_LOCATION, []string{input.WebsiteRedirectLocation}, isObs)
+	if input.websiteRedirectLocation != "" {
+		setHeaders(headers, HEADER_WEBSITE_REDIRECT_LOCATION, []string{input.websiteRedirectLocation}, isObs)
 
 	}
-	setSseHeader(headers, input.SseHeader, false, isObs)
-	if input.Expires != 0 {
-		setHeaders(headers, HEADER_EXPIRES, []string{Int64ToString(input.Expires)}, true)
+	setSseHeader(headers, input.sseHeader, false, isObs)
+	if input.expires != 0 {
+		setHeaders(headers, HEADER_EXPIRES, []string{int64ToString(input.expires)}, true)
 	}
-	if input.Metadata != nil {
-		for key, value := range input.Metadata {
+	if input.metadata != nil {
+		for key, value := range input.metadata {
 			key = strings.TrimSpace(key)
 			setHeadersNext(headers, HEADER_PREFIX_META_OBS+key, HEADER_PREFIX_META+key, []string{value}, isObs)
 		}
@@ -37,49 +37,49 @@ func (input ObjectOperationInput) trans(isObs bool) (params map[string]string, h
 	return
 }
 
-func (input HeadObjectInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
+func (input headObjectInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
 	params = make(map[string]string)
-	if input.VersionId != "" {
-		params[PARAM_VERSION_ID] = input.VersionId
+	if input.versionId != "" {
+		params[PARAM_VERSION_ID] = input.versionId
 	}
 	return
 }
 
-func (input InitiateMultipartUploadInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
-	params, headers, data, err = input.ObjectOperationInput.trans(isObs)
+func (input initiateMultipartUploadInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
+	params, headers, data, err = input.objectOperationInput.trans(isObs)
 	if err != nil {
 		return
 	}
-	if input.ContentType != "" {
-		headers[HEADER_CONTENT_TYPE_CAML] = []string{input.ContentType}
+	if input.contentType != "" {
+		headers[HEADER_CONTENT_TYPE_CAML] = []string{input.contentType}
 	}
 	params[string("uploads")] = ""
-	if input.EncodingType != "" {
-		params["encoding-type"] = input.EncodingType
+	if input.encodingType != "" {
+		params["encoding-type"] = input.encodingType
 	}
 
 	return
 }
 
-func (input CompleteMultipartUploadInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
-	params = map[string]string{"uploadId": input.UploadId}
-	if input.EncodingType != "" {
-		params["encoding-type"] = input.EncodingType
+func (input completeMultipartUploadInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
+	params = map[string]string{"uploadId": input.uploadId}
+	if input.encodingType != "" {
+		params["encoding-type"] = input.encodingType
 	}
-	data, _ = ConvertCompleteMultipartUploadInputToXml(input, false)
+	data, _ = convertCompleteMultipartUploadInputToXml(input, false)
 
 	return
 }
 
-func (input AbortMultipartUploadInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
-	params = map[string]string{"uploadId": input.UploadId}
+func (input abortMultipartUploadInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
+	params = map[string]string{"uploadId": input.uploadId}
 	return
 }
 
-func (input DeleteObjectInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
+func (input deleteObjectInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
 	params = make(map[string]string)
-	if input.VersionId != "" {
-		params[PARAM_VERSION_ID] = input.VersionId
+	if input.versionId != "" {
+		params[PARAM_VERSION_ID] = input.versionId
 	}
 	return
 }
@@ -94,17 +94,17 @@ func setHeaders(headers map[string][]string, header string, headerValue []string
 	}
 }
 
-func (input ObjectOperationInput) prepareGrantHeaders(headers map[string][]string) {
-	if GrantReadID := input.GrantReadId; GrantReadID != "" {
+func (input objectOperationInput) prepareGrantHeaders(headers map[string][]string) {
+	if GrantReadID := input.grantReadId; GrantReadID != "" {
 		setHeaders(headers, HEADER_GRANT_READ_OBS, []string{GrantReadID}, true)
 	}
-	if GrantReadAcpID := input.GrantReadAcpId; GrantReadAcpID != "" {
+	if GrantReadAcpID := input.grantReadAcpId; GrantReadAcpID != "" {
 		setHeaders(headers, HEADER_GRANT_READ_ACP_OBS, []string{GrantReadAcpID}, true)
 	}
-	if GrantWriteAcpID := input.GrantWriteAcpId; GrantWriteAcpID != "" {
+	if GrantWriteAcpID := input.grantWriteAcpId; GrantWriteAcpID != "" {
 		setHeaders(headers, HEADER_GRANT_WRITE_ACP_OBS, []string{GrantWriteAcpID}, true)
 	}
-	if GrantFullControlID := input.GrantFullControlId; GrantFullControlID != "" {
+	if GrantFullControlID := input.grantFullControlId; GrantFullControlID != "" {
 		setHeaders(headers, HEADER_GRANT_FULL_CONTROL_OBS, []string{GrantFullControlID}, true)
 	}
 }
@@ -117,28 +117,28 @@ func setHeadersNext(headers map[string][]string, header string, headerNext strin
 	}
 }
 
-func setSseHeader(headers map[string][]string, sseHeader ISseHeader, sseCOnly bool, isObs bool) {
+func setSseHeader(headers map[string][]string, sseHeader isseHeader, sseCOnly bool, isObs bool) {
 	if sseHeader != nil {
-		if sseCHeader, ok := sseHeader.(SseCHeader); ok {
-			setHeaders(headers, HEADER_SSEC_ENCRYPTION, []string{sseCHeader.GetEncryption()}, isObs)
-			setHeaders(headers, HEADER_SSEC_KEY, []string{sseCHeader.GetKey()}, isObs)
+		if sseCHeader, ok := sseHeader.(sseCHeader); ok {
+			setHeaders(headers, HEADER_SSEC_ENCRYPTION, []string{sseCHeader.getEncryption()}, isObs)
+			setHeaders(headers, HEADER_SSEC_KEY, []string{sseCHeader.getKey()}, isObs)
 			setHeaders(headers, HEADER_SSEC_KEY_MD5, []string{sseCHeader.GetKeyMD5()}, isObs)
-		} else if sseKmsHeader, ok := sseHeader.(SseKmsHeader); !sseCOnly && ok {
+		} else if sseKmsHeader, ok := sseHeader.(sseKmsHeader); !sseCOnly && ok {
 			sseKmsHeader.isObs = isObs
-			setHeaders(headers, HEADER_SSEKMS_ENCRYPTION, []string{sseKmsHeader.GetEncryption()}, isObs)
-			if sseKmsHeader.GetKey() != "" {
-				setHeadersNext(headers, HEADER_SSEKMS_KEY_OBS, HEADER_SSEKMS_KEY_AMZ, []string{sseKmsHeader.GetKey()}, isObs)
+			setHeaders(headers, HEADER_SSEKMS_ENCRYPTION, []string{sseKmsHeader.getEncryption()}, isObs)
+			if sseKmsHeader.getKey() != "" {
+				setHeadersNext(headers, HEADER_SSEKMS_KEY_OBS, HEADER_SSEKMS_KEY_AMZ, []string{sseKmsHeader.getKey()}, isObs)
 			}
 		}
 	}
 }
 
-func (header SseCHeader) GetKeyMD5() string {
-	if header.KeyMD5 != "" {
-		return header.KeyMD5
+func (header sseCHeader) GetKeyMD5() string {
+	if header.keyMD5 != "" {
+		return header.keyMD5
 	}
-	if ret, err := Base64Decode(header.GetKey()); err == nil {
-		return Base64Md5(ret)
+	if ret, err := base64Decode(header.getKey()); err == nil {
+		return base64Md5(ret)
 	}
 
 	return ""

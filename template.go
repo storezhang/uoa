@@ -15,7 +15,7 @@ type template struct {
 	obs executor
 }
 
-func (t *template) Exist(ctx context.Context, bucket string, path Path, opts ...option) (exist bool, err error) {
+func (t *template) Exist(ctx context.Context, path Path, opts ...option) (exist bool, err error) {
 	options := defaultOptions
 	for _, opt := range opts {
 		opt.apply(options)
@@ -24,13 +24,13 @@ func (t *template) Exist(ctx context.Context, bucket string, path Path, opts ...
 	key := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		exist, err = t.cos.exist(ctx, bucket, key, options)
+		exist, err = t.cos.exist(ctx, key, options)
 	case TypeS3:
-		exist, err = t.s3.exist(ctx, bucket, key, options)
+		exist, err = t.s3.exist(ctx, key, options)
 	case TypeObs:
-		exist, err = t.obs.exist(ctx, bucket, key, options)
+		exist, err = t.obs.exist(ctx, key, options)
 	default:
-		exist, err = t.cos.exist(ctx, bucket, key, options)
+		exist, err = t.cos.exist(ctx, key, options)
 	}
 
 	return
@@ -78,7 +78,7 @@ func (t *template) Credentials(ctx context.Context, path Path, opts ...credentia
 	return
 }
 
-func (t *template) Url(ctx context.Context, bucket string, path Path, opts ...urlOption) (url *url.URL, err error) {
+func (t *template) Url(ctx context.Context, path Path, opts ...urlOption) (url *url.URL, err error) {
 	options := defaultUrlOptions()
 	for _, opt := range opts {
 		opt.applyUrl(options)
@@ -87,13 +87,13 @@ func (t *template) Url(ctx context.Context, bucket string, path Path, opts ...ur
 	key := t.key(path, options.environment, options.separator)
 	switch options.uoaType {
 	case TypeCos:
-		url, err = t.cos.url(ctx, bucket, key, options)
+		url, err = t.cos.url(ctx, key, options)
 	case TypeS3:
-		url, err = t.s3.url(ctx, bucket, key, options)
+		url, err = t.s3.url(ctx, key, options)
 	case TypeObs:
-		url, err = t.obs.url(ctx, bucket, key, options)
+		url, err = t.obs.url(ctx, key, options)
 	default:
-		url, err = t.cos.url(ctx, bucket, key, options)
+		url, err = t.cos.url(ctx, key, options)
 	}
 
 	return
