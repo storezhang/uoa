@@ -1,14 +1,14 @@
 package uoa
 
 import (
-	"bytes"
-	"errors"
-	"io"
-	"net"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
+	`bytes`
+	`errors`
+	`io`
+	`net`
+	`net/http`
+	`net/url`
+	`strings`
+	`time`
 )
 
 // 准备请求头

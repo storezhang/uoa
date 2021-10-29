@@ -1,9 +1,9 @@
 package uoa
 
 import (
-	"context"
-	"net/url"
-	"sync"
+	`context`
+	`net/url`
+	`sync`
 )
 
 type _obs struct {

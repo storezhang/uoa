@@ -1,18 +1,18 @@
 package uoa
 
 import (
-	"crypto/hmac"
-	"crypto/md5"
-	"crypto/sha1"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
-	"net/url"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
+	`crypto/hmac`
+	`crypto/md5`
+	`crypto/sha1`
+	`crypto/sha256`
+	`encoding/base64`
+	`encoding/hex`
+	`encoding/json`
+	`net/url`
+	`regexp`
+	`strconv`
+	`strings`
+	`time`
 )
 
 var regex = regexp.MustCompile("^[\u4e00-\u9fa5]$")

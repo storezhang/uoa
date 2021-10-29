@@ -1,18 +1,18 @@
 package uoa
 
 import (
-	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"errors"
-	"fmt"
-	"net"
-	"net/http"
-	"net/url"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
+	`context`
+	`crypto/tls`
+	`crypto/x509`
+	`errors`
+	`fmt`
+	`net`
+	`net/http`
+	`net/url`
+	`sort`
+	`strconv`
+	`strings`
+	`time`
 )
 
 type urlHolder struct {

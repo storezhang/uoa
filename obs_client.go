@@ -1,10 +1,10 @@
 package uoa
 
 import (
-	"errors"
-	"net/http"
-	"sort"
-	"strings"
+	`errors`
+	`net/http`
+	`sort`
+	`strings`
 )
 
 type ObsClient struct {

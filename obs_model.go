@@ -1,10 +1,10 @@
 package uoa
 
 import (
-	"encoding/xml"
-	"io"
-	"net/http"
-	"time"
+	`encoding/xml`
+	`io`
+	`net/http`
+	`time`
 )
 
 type ISseHeader interface {

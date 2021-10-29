@@ -1,13 +1,13 @@
 package uoa
 
 import (
-	"encoding/xml"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"reflect"
-	"strings"
+	`encoding/xml`
+	`fmt`
+	`io/ioutil`
+	`net/http`
+	`net/url`
+	`reflect`
+	`strings`
 )
 
 func parseSseHeader(responseHeaders map[string][]string) (sseHeader ISseHeader) {

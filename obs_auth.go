@@ -1,12 +1,12 @@
 package uoa
 
 import (
-	"errors"
-	"fmt"
-	"net/url"
-	"sort"
-	"strings"
-	"time"
+	`errors`
+	`fmt`
+	`net/url`
+	`sort`
+	`strings`
+	`time`
 )
 
 func v2Auth(ak, sk, method, canonicalizedURL string, headers map[string][]string, isObs bool) map[string]string {

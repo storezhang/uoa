@@ -1,8 +1,8 @@
 package uoa
 
 import (
-	"strings"
-	"sync/atomic"
+	`strings`
+	`sync/atomic`
 )
 
 var emptySecurityHolder = securityHolder{}

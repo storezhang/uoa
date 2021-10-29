@@ -1,6 +1,6 @@
 package uoa
 
-import "strings"
+import `strings`
 
 func (input ObjectOperationInput) trans(isObs bool) (params map[string]string, headers map[string][]string, data interface{}, err error) {
 	headers = make(map[string][]string)
